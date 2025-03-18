@@ -13,30 +13,41 @@ class Player:
 class WerewolfGame:
     def __init__(self):
         self.players = []
-        self.roles = ["Werewolf", "Investigator", "Angel", "Villager", "Villager"]
+        self.werewolf_role = ["Werewolf"]
+        self.good_roles_pool = ["Investigator", "Angel", "Villager", "Villager", "Villager", "Villager"]
+        self.player_names = ["Alice", "Bob", "Charlie", "David", "Eve"]
         self.assign_roles()
         self.game_over = False
 
     def assign_roles(self):
-        random.shuffle(self.roles)
-        for i, role in enumerate(self.roles):
-            self.players.append(Player(f"Player {i+1}", role))
+        chosen_good_roles = random.sample(self.good_roles_pool, 4)  # Select 4 random good roles
+        all_roles = self.werewolf_role + chosen_good_roles
+        random.shuffle(all_roles)
+        
+        for i, role in enumerate(all_roles):
+            self.players.append(Player(self.player_names[i], role))
+        
+        print("\n--- Players and Roles ---")
+        for player in self.players:
+            print(f"{player.name} is a {player.role}")
 
     def night_phase(self):
         print("\n--- Night Phase ---")
         werewolf = next(p for p in self.players if p.role == "Werewolf")
-        investigator = next(p for p in self.players if p.role == "Investigator")
-        angel = next(p for p in self.players if p.role == "Angel")
+        investigator = next((p for p in self.players if p.role == "Investigator"), None)
+        angel = next((p for p in self.players if p.role == "Angel"), None)
         
         target = random.choice([p for p in self.players if p.alive and p != werewolf])
-        saved = random.choice([p for p in self.players if p.alive])
-        investigated = random.choice([p for p in self.players if p.alive and p != investigator])
+        saved = random.choice([p for p in self.players if p.alive]) if angel else None
+        investigated = random.choice([p for p in self.players if p.alive and p != investigator]) if investigator else None
 
         print(f"Werewolf targets {target.name}.")
-        print(f"Angel tries to save {saved.name}.")
-        print(f"Investigator checks {investigated.name}. They are a {'Werewolf' if investigated.role == 'Werewolf' else 'Villager'}.")
+        if angel:
+            print(f"Angel tries to save {saved.name}.")
+        if investigator:
+            print(f"Investigator checks {investigated.name}. They are a {'Werewolf' if investigated.role == 'Werewolf' else 'Villager'}.")
         
-        if target != saved:
+        if not angel or target != saved:
             target.alive = False
             print(f"{target.name} was killed!")
         else:
@@ -75,3 +86,4 @@ class WerewolfGame:
 if __name__ == "__main__":
     game = WerewolfGame()
     game.play()
+
