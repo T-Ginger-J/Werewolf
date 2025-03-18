@@ -36,6 +36,30 @@ class WerewolfGame:
         for player in self.players:
             print(f"{player.name} is a {player.role}")
 
+    def initialize_ai_players(self):
+        for player in self.players:
+            self.introduce_ai_player(player)
+    
+    def introduce_ai_player(self, player):
+        prompt = f"""
+        You are {player.name}, playing a Werewolf game. Your role is {player.role}.
+        Here are the rules:
+        - The Werewolf eliminates one player per night.
+        - The Investigator can check if a player is a Werewolf.
+        - The Angel can protect one player per night.
+        - The Fool wins if they are executed.
+        - Villagers have no special ability.
+        - There can be at most one of each non Villager role. 
+        - Any of the roles besides Werewolf could not be in play. 
+        
+        The goal of the Werewolf is to eliminate all other players.
+        The goal of the Villagers (and other good roles) is to find and execute the Werewolf.
+        """
+        
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(prompt)
+        print(f"AI {player.name} initialized: {response.text.strip()}")
+
     def night_phase(self):
         print("\n--- Night Phase ---")
         werewolf = next(p for p in self.players if p.role == "Werewolf")
