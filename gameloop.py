@@ -14,10 +14,11 @@ class WerewolfGame:
     def __init__(self):
         self.players = []
         self.werewolf_role = ["Werewolf"]
-        self.good_roles_pool = ["Investigator", "Angel", "Villager", "Villager", "Villager", "Villager"]
+        self.good_roles_pool = ["Investigator", "Angel", "Fool", "Villager", "Villager", "Villager"]
         self.player_names = ["Alice", "Bob", "Charlie", "David", "Eve"]
         self.assign_roles()
         self.game_over = False
+        self.fool_wins = False
 
     def assign_roles(self):
         chosen_good_roles = random.sample(self.good_roles_pool, 4)  # Select 4 random good roles
@@ -34,8 +35,8 @@ class WerewolfGame:
     def night_phase(self):
         print("\n--- Night Phase ---")
         werewolf = next(p for p in self.players if p.role == "Werewolf")
-        investigator = next((p for p in self.players if p.role == "Investigator"), None)
-        angel = next((p for p in self.players if p.role == "Angel"), None)
+        investigator = next((p for p in self.players if p.role == "Investigator" and p.alive), None)
+        angel = next((p for p in self.players if p.role == "Angel" and p.alive), None)
         
         target = random.choice([p for p in self.players if p.alive and p != werewolf])
         saved = random.choice([p for p in self.players if p.alive]) if angel else None
@@ -64,7 +65,15 @@ class WerewolfGame:
         vote_target.alive = False
         print(f"Players vote to eliminate {vote_target.name}!")
 
+        if vote_target.role == "Fool":
+            print("\nThe Fool has been eliminated and wins the game!")
+            self.fool_wins = True
+            self.game_over = True
+
     def check_winner(self):
+        if self.fool_wins:
+            return
+
         werewolf_alive = any(p.alive and p.role == "Werewolf" for p in self.players)
         villagers_alive = sum(1 for p in self.players if p.alive and p.role != "Werewolf")
 
@@ -86,4 +95,3 @@ class WerewolfGame:
 if __name__ == "__main__":
     game = WerewolfGame()
     game.play()
-
