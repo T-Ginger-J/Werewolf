@@ -1,6 +1,10 @@
 import random
 import time
 
+import google.generativeai as genai
+
+genai.configure(api_key="YOUR_GEMINI_API_KEY")
+
 class Player:
     def __init__(self, name, role):
         self.name = name
