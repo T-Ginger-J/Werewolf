@@ -60,15 +60,33 @@ class WerewolfGame:
         if len(alive_players) <= 2:
             self.game_over = True
             return
-
-        vote_target = random.choice(alive_players)
-        vote_target.alive = False
-        print(f"Players vote to eliminate {vote_target.name}!")
-
-        if vote_target.role == "Fool":
-            print("\nThe Fool has been eliminated and wins the game!")
-            self.fool_wins = True
-            self.game_over = True
+        
+        nominations = {}
+        for player in alive_players:
+            possible_nominees = [p for p in alive_players if p != player and p not in nominations]
+            if possible_nominees:
+                nominee = random.choice(possible_nominees)
+                nominations[nominee] = []
+                print(f"{player.name} nominates {nominee.name}")
+        
+        for player in alive_players:
+            for nominee in nominations:
+                if random.choice([True, False]):  # Players may choose to vote or not
+                    nominations[nominee].append(player.name)
+        
+        majority = len(alive_players) // 2 + 1
+        for nominee, voters in nominations.items():
+            print(f"{nominee.name} received votes from: {', '.join(voters) if voters else 'No one'}")
+            if len(voters) >= majority:
+                nominee.alive = False
+                print(f"{nominee.name} is executed with {len(voters)} votes!")
+                if nominee.role == "Fool":
+                    print("\nThe Fool has been executed and wins the game!")
+                    self.fool_wins = True
+                    self.game_over = True
+                return
+        
+        print("No player reached the majority vote, no execution today.")
 
     def check_winner(self):
         if self.fool_wins:
