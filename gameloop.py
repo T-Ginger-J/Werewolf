@@ -23,6 +23,7 @@ class WerewolfGame:
         self.assign_roles()
         self.game_over = False
         self.fool_wins = False
+        self.initialize_ai_players()
 
     def assign_roles(self):
         chosen_good_roles = random.sample(self.good_roles_pool, 4)  # Select 4 random good roles
@@ -54,33 +55,64 @@ class WerewolfGame:
         
         The goal of the Werewolf is to eliminate all other players.
         The goal of the Villagers (and other good roles) is to find and execute the Werewolf.
+        Respond yes if you understand.
+        """
+        try:
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            response = model.generate_content(prompt)
+            print(f"AI {player.name} initialized: {response.text.strip()}")
+        except Exception as e:
+            print(f"Error initializing AI for {player.name}: {e}")
+
+    def get_ai_decision(self, player, decision_type, options):
+        prompt = f"""
+        You are {player.name}, playing as {player.role} in a game of Werewolf.
+        The following players are still alive: {', '.join(options)}
+        
+        Your task is to make a decision: {decision_type}.
+        Respond with only the name of the chosen player.
         """
         
         model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(prompt)
-        print(f"AI {player.name} initialized: {response.text.strip()}")
+        choice = response.text.strip()
+        if choice in options:
+            return choice
+        else:
+            print("random")
+            return random.choice(options) 
 
     def night_phase(self):
         print("\n--- Night Phase ---")
         werewolf = next(p for p in self.players if p.role == "Werewolf")
         investigator = next((p for p in self.players if p.role == "Investigator" and p.alive), None)
         angel = next((p for p in self.players if p.role == "Angel" and p.alive), None)
-        
-        target = random.choice([p for p in self.players if p.alive and p != werewolf])
-        saved = random.choice([p for p in self.players if p.alive]) if angel else None
-        investigated = random.choice([p for p in self.players if p.alive and p != investigator]) if investigator else None
 
-        print(f"Werewolf targets {target.name}.")
+        protected_player = None
         if angel:
-            print(f"Angel tries to save {saved.name}.")
-        if investigator:
-            print(f"Investigator checks {investigated.name}. They are a {'Werewolf' if investigated.role == 'Werewolf' else 'Villager'}.")
+            alive_players = [p.name for p in self.players if p.alive and p != angel]
+            protected_name = self.get_ai_decision(angel, "choose a player to protect", alive_players)
+            protected_player = next(p for p in self.players if p.name == protected_name)
+            print(f"Angel {angel.name} protects {protected_player.name}.")
         
-        if not angel or target != saved:
-            target.alive = False
-            print(f"{target.name} was killed!")
-        else:
-            print(f"{target.name} was saved!")
+        if werewolf:
+            alive_players = [p.name for p in self.players if p.alive and p != werewolf]
+            target_name = self.get_ai_decision(werewolf, "choose a player to attack", alive_players)
+            target = next(p for p in self.players if p.name == target_name)
+            if target == protected_player:
+                print(f"Werewolf {werewolf.name} attacks {target.name}, but they are protected!")
+            else:
+                print(f"Werewolf {werewolf.name} attacks {target.name}.")
+                target.alive = False
+
+        if investigator:
+            alive_players = [p.name for p in self.players if p.alive and p != investigator]
+            suspect_name = self.get_ai_decision(investigator, "choose a player to investigate", alive_players)
+            suspect = next(p for p in self.players if p.name == suspect_name)
+            result = "Werewolf" if suspect.role == "Werewolf" else "Not a Werewolf"
+            print(f"Investigator {investigator.name} investigates {suspect.name} and learns they are: {result}.")
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            response = model.generate_content(result)
 
     def day_phase(self):
         print("\n--- Day Phase ---")
@@ -135,3 +167,4 @@ class WerewolfGame:
 if __name__ == "__main__":
     game = WerewolfGame()
     game.play()
+
