@@ -1,9 +1,7 @@
 import random
 import time
 
-import google.generativeai as genai
-
-genai.configure(api_key="YOUR_GEMINI_API_KEY")
+import ollama
 
 class Player:
     def __init__(self, name, role):
@@ -55,12 +53,11 @@ class WerewolfGame:
         
         The goal of the Werewolf is to eliminate all other players.
         The goal of the Villagers (and other good roles) is to find and execute the Werewolf.
-        Respond yes if you understand.
+        Respond with only the word yes if you understand. No explinations.
         """
         try:
-            model = genai.GenerativeModel("gemini-1.5-flash")
-            response = model.generate_content(prompt)
-            print(f"AI {player.name} initialized: {response.text.strip()}")
+            response = ollama.chat(model="gemma:2b", messages=[{"role": "user", "content": prompt}])
+            print(f"AI {player.name} initialized: {response['message']['content']}")
         except Exception as e:
             print(f"Error initializing AI for {player.name}: {e}")
 
@@ -70,12 +67,15 @@ class WerewolfGame:
         The following players are still alive: {', '.join(options)}
         
         Your task is to make a decision: {decision_type}.
-        Respond with only the name of the chosen player.
+        Respond with ONLY one name from the list below. No explanations.
+    
+        Options: {', '.join(options)}
+    
+        Answer format: [Exact player name]
         """
         
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(prompt)
-        choice = response.text.strip()
+        response = ollama.chat(model="gemma:2b", messages=[{"role": "user", "content": prompt}])
+        choice = response['message']['content'].strip()
         if choice in options:
             return choice
         else:
@@ -111,40 +111,44 @@ class WerewolfGame:
             suspect = next(p for p in self.players if p.name == suspect_name)
             result = "Werewolf" if suspect.role == "Werewolf" else "Not a Werewolf"
             print(f"Investigator {investigator.name} investigates {suspect.name} and learns they are: {result}.")
-            model = genai.GenerativeModel("gemini-1.5-flash")
-            response = model.generate_content(result)
 
-    def day_phase(self):
-        print("\n--- Day Phase ---")
-        alive_players = [p for p in self.players if p.alive]
-        if len(alive_players) <= 2:
-            self.game_over = True
-            return
+    def nomination_phase(self):
+        print("\n--- Nomination Phase ---")
+        nominations = set()
+        alive_players = [p.name for p in self.players if p.alive]
         
-        nominated = set()
-        while len(nominated) < len(alive_players) - 1:
-            nominator = random.choice([p for p in alive_players if p not in nominated])
-            nominee = random.choice([p for p in alive_players if p != nominator and p not in nominated])
-            nominated.add(nominee)
-            print(f"{nominator.name} nominates {nominee.name}")
-            
-            voters = [p.name for p in alive_players if random.choice([True, False])]
-            print(f"{nominee.name} received votes from: {', '.join(voters) if voters else 'No one'}")
-            
-            if len(voters) >= (len(alive_players) // 2 + 1):
-                nominee.alive = False
-                print(f"{nominee.name} is executed with {len(voters)} votes!")
-                if nominee.role == "Fool":
-                    print("\nThe Fool has been executed and wins the game!")
-                    self.fool_wins = True
-                    self.game_over = True
-                return
+        while len(nominations) < len(alive_players) - 1:
+            nominator_name = random.choice(alive_players)
+            available_nominations = [p for p in alive_players if p not in nominations and p != nominator_name]
+            if not available_nominations:
+                break
+            nominee_name = self.get_ai_decision(next(p for p in self.players if p.name == nominator_name), "nominate a player for execution", available_nominations)
+            print(f"{nominator_name} nominates {nominee_name}.")
+            nominations.add(nominee_name)
+            if self.voting_phase(nominee_name):
+                break
+    
+    def voting_phase(self, nominee_name):
+        votes = []
+        alive_players = [p.name for p in self.players if p.alive]
         
-        print("No player reached the majority vote, no execution today.")
+        for voter_name in alive_players:
+            voter = next(p for p in self.players if p.name == voter_name)
+            decision = self.get_ai_decision(voter, "vote to execute or not", ["Yes", "No"])
+            if decision == "Yes":
+                votes.append(voter_name)
+        
+        print(f"Votes for {nominee_name}: {', '.join(votes)}")
+        if len(votes) > len(alive_players) / 2:
+            print(f"{nominee_name} has been executed!")
+            if nominee_name.role == "Fool":
+                print("\nThe Fool has been executed and wins the game!")
+                self.game_over = True
+            next(p for p in self.players if p.name == nominee_name).alive = False
+            return True
+        return False
 
     def check_winner(self):
-        if self.fool_wins:
-            return
 
         werewolf_alive = any(p.alive and p.role == "Werewolf" for p in self.players)
         villagers_alive = sum(1 for p in self.players if p.alive and p.role != "Werewolf")
@@ -159,12 +163,12 @@ class WerewolfGame:
     def play(self):
         while not self.game_over:
             self.night_phase()
+            self.check_winner()
             time.sleep(1)
-            self.day_phase()
+            self.nomination_phase()
             self.check_winner()
             time.sleep(1)
 
 if __name__ == "__main__":
     game = WerewolfGame()
     game.play()
-
