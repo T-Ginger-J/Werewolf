@@ -59,14 +59,15 @@ class WerewolfGame:
         
         The goal of the Werewolf is to eliminate all other players.
         The goal of the Villagers (and other good roles) is to find and execute the Werewolf.
-        Respond with only the word yes if you understand. No explinations.
         """
         try:
             # response = ollama.chat(model="mistral", messages=[{"role": "user", "content": prompt}])
             self.ai_agents[player.name].append({"role": "user", "content": prompt})
             print(f"AI {player.name} initialized: {response['message']['content']}")
         except Exception as e:
-            print(f"Error initializing AI for {player.name}: {e}")
+            self.ai_agents[player.name].append({"role": "user", "content": prompt})
+            # print(f"Error initializing AI for {player.name}: {e}")
+
 
     def get_ai_decision(self, player, decision_type, options):
     
@@ -83,19 +84,15 @@ class WerewolfGame:
         """
 
         messages = self.ai_agents[player.name]  # Get player's chat history
-
-        messages.append({"role": "user", "content": prompt})  # Add prompt to chat history
         
-        response = ollama.chat(model="mistral", messages=messages) # get AI decision
+        response = ollama.chat(model="mistral", messages=messages + [{"role": "user", "content": prompt}]) # get AI decision
 
         choice = response['message']['content'].strip() #get the text from the response
-
-        messages.append({"role": "assistant", "content": choice})
 
         if choice in options:
             return choice
         else:
-            print("random")
+            # print("random")
             return random.choice(options) 
 
     def night_phase(self):
@@ -109,6 +106,7 @@ class WerewolfGame:
             alive_players = [p.name for p in self.players if p.alive and p != angel]
             protected_name = self.get_ai_decision(angel, "choose a player to protect", alive_players)
             protected_player = next(p for p in self.players if p.name == protected_name)
+            self.ai_agents[angel].append({"role": "assistant", "content": "I protected " + protected_name})
             print(f"Angel {angel.name} protects {protected_player.name}.")
         
         if werewolf:
@@ -126,6 +124,7 @@ class WerewolfGame:
             suspect_name = self.get_ai_decision(investigator, "choose a player to investigate", alive_players)
             suspect = next(p for p in self.players if p.name == suspect_name)
             result = "Werewolf" if suspect.role == "Werewolf" else "Not a Werewolf"
+            self.ai_agents[investigator].append({"role": "assistant", "content": "I investigated " + suspect_name + " and learned that they are " + result})
             print(f"Investigator {investigator.name} investigates {suspect.name} and learns they are: {result}.")
         
 
@@ -150,10 +149,9 @@ class WerewolfGame:
             Please keep your responses to only 2 sentences. 
             """
             # append discussion prompt
-            messages.append({"role": "user", "content": prompt})
             
             # Send prompt
-            response = ollama.chat(model="mistral", messages=messages) # get AI decision
+            response = ollama.chat(model="mistral", messages=messages + [{"role": "user", "content": prompt}]) # get AI decision
 
             choice = response['message']['content'].strip()
 
@@ -181,15 +179,17 @@ class WerewolfGame:
             }}
             """
 
-            messages.append({"role": "user", "content": prompt})
+            #instead of appending this message to the chat history, make a temporary
+
             
             # Send prompt
-            response = ollama.chat(model="mistral", messages=messages) # get AI decision
+            response = ollama.chat(model="mistral", messages=messages + [{"role": "user", "content": prompt}]) # get AI decision
 
             choice = response['message']['content'].strip()
 
+            messages.append({"role": "assistant", "content": "I would vote for: " + choice})
             # print response
-            print(choice)
+            # print(choice)
 
             try: 
                 vote_data = json.loads(choice)
@@ -214,7 +214,7 @@ class WerewolfGame:
                 break
             nominee_name = next((vote for vote in nominator.votes if vote in available_nominations), None)
             if not nominee_name:
-                break
+                continue
             print(f"{nominator.name} nominates {nominee_name}.")
             nominations.add(nominee_name)
             if self.voting_phase(nominee_name):
@@ -247,16 +247,15 @@ class WerewolfGame:
         if not werewolf_alive:
             print("\nVillagers win!")
             self.game_over = True
-        elif villagers_alive <= 1:
+        elif villagers_alive <= 2:
             print("\nWerewolf wins!")
             self.game_over = True
 
     def play(self):
         while not self.game_over:
-            # self.night_phase()
-            self.check_winner()
+            self.night_phase()
             time.sleep(1)
-            # self.discussion_phase()
+            self.discussion_phase()
             self.get_noms()
             self.nomination_phase()
             self.check_winner()
