@@ -103,15 +103,15 @@ class WerewolfGame:
         angel = next((p for p in self.players if p.role == "Angel" and p.alive), None)
 
         protected_player = None
-        if angel:
+        '''if angel:
             alive_players = [p.name for p in self.players if p.alive and p != angel]
-            # protected_name = self.get_ai_decision(angel, "choose a player to protect", alive_players)
+            protected_name = self.get_ai_decision(angel, "choose a player to protect", alive_players)
             protected_player = next(p for p in self.players if p.name == protected_name)
             print(f"Angel {angel.name} protects {protected_player.name}.")
         
         if werewolf:
             alive_players = [p.name for p in self.players if p.alive and p != werewolf]
-            # target_name = self.get_ai_decision(werewolf, "choose a player to attack", alive_players)
+            target_name = self.get_ai_decision(werewolf, "choose a player to attack", alive_players)
             target = next(p for p in self.players if p.name == target_name)
             if target == protected_player:
                 print(f"Werewolf {werewolf.name} attacks {target.name}, but they are protected!")
@@ -121,10 +121,11 @@ class WerewolfGame:
 
         if investigator:
             alive_players = [p.name for p in self.players if p.alive and p != investigator]
-            # suspect_name = self.get_ai_decision(investigator, "choose a player to investigate", alive_players)
+            suspect_name = self.get_ai_decision(investigator, "choose a player to investigate", alive_players)
             suspect = next(p for p in self.players if p.name == suspect_name)
             result = "Werewolf" if suspect.role == "Werewolf" else "Not a Werewolf"
             print(f"Investigator {investigator.name} investigates {suspect.name} and learns they are: {result}.")
+        '''
 
     def nomination_phase(self):
         print("\n--- Discussion Phase ---")
@@ -153,12 +154,14 @@ class WerewolfGame:
             # Send prompt
             response = ollama.chat(model="mistral", messages=messages) # get AI decision
 
+            choice = response['message']['content'].strip()
+
             # print response
-            print(response)
+            print(choice)
 
             for p in alive_players:
                 # append response to prompt
-                self.ai_agents[p].append({"role": "assistant", "content": response})
+                self.ai_agents[p.name].append({"role": "assistant", "content": choice})
 
         print("\n--- Nomination Phase ---")
         nominations = set()
