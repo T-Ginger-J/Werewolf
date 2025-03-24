@@ -127,7 +127,7 @@ class WerewolfGame:
             print(f"Investigator {investigator.name} investigates {suspect.name} and learns they are: {result}.")
         '''
 
-    def nomination_phase(self):
+    def discussion_phase(self):
         print("\n--- Discussion Phase ---")
         alive_players = [p for p in self.players if p.alive]
 
@@ -145,8 +145,7 @@ class WerewolfGame:
             
             Suggest a player for execution if you suspect someone. 
 
-            Please keep your responses to only a sentence or two. 
-            Remember to tell us your name.
+            Please keep your responses to only 2 sentences. 
             """
             # append discussion prompt
             messages.append({"role": "user", "content": prompt})
@@ -159,20 +158,25 @@ class WerewolfGame:
             # print response
             print(choice)
 
+            choice = "AI " + player.name + " says: " + choice
+
             for p in alive_players:
                 # append response to prompt
                 self.ai_agents[p.name].append({"role": "assistant", "content": choice})
 
+    def nomination_phase(self):
         print("\n--- Nomination Phase ---")
         nominations = set()
+        alive_players = [p for p in self.players if p.alive]
         
         while len(nominations) < len(alive_players) - 1:
-            nominator_name = random.choice(alive_players)
-            available_nominations = [p for p in alive_players if p not in nominations and p != nominator_name]
+            nominator = random.choice(alive_players)
+            available_nominations = [p.name for p in alive_players if p.name not in nominations and p.name != nominator.name]
+            print(available_nominations)
             if not available_nominations:
                 break
-            nominee_name = self.get_ai_decision(next(p for p in self.players if p.name == nominator_name), "nominate a player for execution", available_nominations)
-            print(f"{nominator_name} nominates {nominee_name}.")
+            nominee_name = self.get_ai_decision(next(p for p in self.players if p.name == nominator.name), "nominate a player for execution", available_nominations)
+            print(f"{nominator} nominates {nominee_name}.")
             nominations.add(nominee_name)
             if self.voting_phase(nominee_name):
                 break
@@ -183,7 +187,8 @@ class WerewolfGame:
         
         for voter_name in alive_players:
             voter = next(p for p in self.players if p.name == voter_name)
-            decision = self.get_ai_decision(voter, "vote to execute or not", ["Yes", "No"])
+            prompt = "vote to execute " + nominee_name +  " or not"
+            decision = self.get_ai_decision(voter, prompt, ["Yes", "No"])
             if decision == "Yes":
                 votes.append(voter_name)
         
@@ -214,6 +219,7 @@ class WerewolfGame:
             self.night_phase()
             self.check_winner()
             time.sleep(1)
+            # discussion_phase()
             self.nomination_phase()
             self.check_winner()
             time.sleep(1)
