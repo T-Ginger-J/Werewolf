@@ -1,5 +1,6 @@
 import random
 import time
+import json
 
 import ollama
 
@@ -8,6 +9,7 @@ class Player:
         self.name = name
         self.role = role
         self.alive = True
+        self.votes = []
 
     def __repr__(self):
         return f"{self.name} ({'Alive' if self.alive else 'Dead'}) - {self.role}"
@@ -156,27 +158,63 @@ class WerewolfGame:
             choice = response['message']['content'].strip()
 
             # print response
-            print(choice)
-
             choice = "AI " + player.name + " says: " + choice
+
+            print(choice)
 
             for p in alive_players:
                 # append response to prompt
                 self.ai_agents[p.name].append({"role": "assistant", "content": choice})
 
+    def get_noms(self):
+        alive_players = [p for p in self.players if p.alive]
+
+        for player in alive_players:
+            messages = self.ai_agents[player.name] # get chat history
+
+            prompt = f"""
+            The following players are still alive: {', '.join(p.name for p in alive_players)}
+            Based on the current game state, return a JSON object with a list of players you would nominate.
+            Example format:
+            {{
+                "votes": ["Player1", "Player2", "Player3"]
+            }}
+            """
+
+            messages.append({"role": "user", "content": prompt})
+            
+            # Send prompt
+            response = ollama.chat(model="mistral", messages=messages) # get AI decision
+
+            choice = response['message']['content'].strip()
+
+            # print response
+            print(choice)
+
+            try: 
+                vote_data = json.loads(choice)
+                player.votes = vote_data.get("votes", [])
+            except json.JSONDecodeError:
+                player.votes = []
+
+
     def nomination_phase(self):
         print("\n--- Nomination Phase ---")
+
+        
         nominations = set()
         alive_players = [p for p in self.players if p.alive]
         nominators = alive_players
         
-        while len(nominations) < len(alive_players) - 1:
+        while len(nominations) < len(alive_players) - 1 and nominators:
             nominator = random.choice(nominators)
             available_nominations = [p.name for p in alive_players if p.name not in nominations and p.name != nominator.name]
             nominators = [p for p in nominators if  p.name != nominator.name]
             if not available_nominations:
                 break
-            nominee_name = self.get_ai_decision(next(p for p in self.players if p.name == nominator.name), "nominate a player for execution", available_nominations)
+            nominee_name = next((vote for vote in nominator.votes if vote in available_nominations), None)
+            if not nominee_name:
+                break
             print(f"{nominator.name} nominates {nominee_name}.")
             nominations.add(nominee_name)
             if self.voting_phase(nominee_name):
@@ -188,9 +226,7 @@ class WerewolfGame:
         
         for voter_name in alive_players:
             voter = next(p for p in self.players if p.name == voter_name)
-            prompt = "vote to execute " + nominee_name +  " or not"
-            decision = self.get_ai_decision(voter, prompt, ["Yes", "No"])
-            if decision == "Yes":
+            if nominee_name in voter.votes:
                 votes.append(voter_name)
         
         print(f"Votes for {nominee_name}: {', '.join(votes)}")
@@ -217,10 +253,11 @@ class WerewolfGame:
 
     def play(self):
         while not self.game_over:
-            self.night_phase()
+            # self.night_phase()
             self.check_winner()
             time.sleep(1)
-            # discussion_phase()
+            # self.discussion_phase()
+            self.get_noms()
             self.nomination_phase()
             self.check_winner()
             time.sleep(1)
