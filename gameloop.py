@@ -103,7 +103,7 @@ class WerewolfGame:
         angel = next((p for p in self.players if p.role == "Angel" and p.alive), None)
 
         protected_player = None
-        '''if angel:
+        if angel:
             alive_players = [p.name for p in self.players if p.alive and p != angel]
             protected_name = self.get_ai_decision(angel, "choose a player to protect", alive_players)
             protected_player = next(p for p in self.players if p.name == protected_name)
@@ -125,7 +125,7 @@ class WerewolfGame:
             suspect = next(p for p in self.players if p.name == suspect_name)
             result = "Werewolf" if suspect.role == "Werewolf" else "Not a Werewolf"
             print(f"Investigator {investigator.name} investigates {suspect.name} and learns they are: {result}.")
-        '''
+        
 
     def discussion_phase(self):
         print("\n--- Discussion Phase ---")
@@ -168,15 +168,16 @@ class WerewolfGame:
         print("\n--- Nomination Phase ---")
         nominations = set()
         alive_players = [p for p in self.players if p.alive]
+        nominators = alive_players
         
         while len(nominations) < len(alive_players) - 1:
-            nominator = random.choice(alive_players)
+            nominator = random.choice(nominators)
             available_nominations = [p.name for p in alive_players if p.name not in nominations and p.name != nominator.name]
-            print(available_nominations)
+            nominators = [p for p in nominators if  p.name != nominator.name]
             if not available_nominations:
                 break
             nominee_name = self.get_ai_decision(next(p for p in self.players if p.name == nominator.name), "nominate a player for execution", available_nominations)
-            print(f"{nominator} nominates {nominee_name}.")
+            print(f"{nominator.name} nominates {nominee_name}.")
             nominations.add(nominee_name)
             if self.voting_phase(nominee_name):
                 break
