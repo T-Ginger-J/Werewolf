@@ -106,7 +106,7 @@ class WerewolfGame:
             alive_players = [p.name for p in self.players if p.alive and p != angel]
             protected_name = self.get_ai_decision(angel, "choose a player to protect", alive_players)
             protected_player = next(p for p in self.players if p.name == protected_name)
-            self.ai_agents[angel].append({"role": "assistant", "content": "I protected " + protected_name})
+            self.ai_agents[angel.name].append({"role": "assistant", "content": "I protected " + protected_name})
             print(f"Angel {angel.name} protects {protected_player.name}.")
         
         if werewolf:
@@ -124,7 +124,7 @@ class WerewolfGame:
             suspect_name = self.get_ai_decision(investigator, "choose a player to investigate", alive_players)
             suspect = next(p for p in self.players if p.name == suspect_name)
             result = "Werewolf" if suspect.role == "Werewolf" else "Not a Werewolf"
-            self.ai_agents[investigator].append({"role": "assistant", "content": "I investigated " + suspect_name + " and learned that they are " + result})
+            self.ai_agents[investigator.name].append({"role": "assistant", "content": "I investigated " + suspect_name + " and learned that they are " + result})
             print(f"Investigator {investigator.name} investigates {suspect.name} and learns they are: {result}.")
         
 
@@ -173,7 +173,9 @@ class WerewolfGame:
             prompt = f"""
             The following players are still alive: {', '.join(p.name for p in alive_players)}
             Based on the current game state, return a JSON object with a list of players you would nominate.
-            Example format:
+            Do not add any explinations, just say which players you think are potentially the werewolf.
+            You should name at least one player. 
+            You must follow this Example format:
             {{
                 "votes": ["Player1", "Player2", "Player3"]
             }}
@@ -189,7 +191,7 @@ class WerewolfGame:
 
             messages.append({"role": "assistant", "content": "I would vote for: " + choice})
             # print response
-            # print(choice)
+            print(choice)
 
             try: 
                 vote_data = json.loads(choice)
