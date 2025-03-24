@@ -105,13 +105,13 @@ class WerewolfGame:
         protected_player = None
         if angel:
             alive_players = [p.name for p in self.players if p.alive and p != angel]
-            protected_name = self.get_ai_decision(angel, "choose a player to protect", alive_players)
+            # protected_name = self.get_ai_decision(angel, "choose a player to protect", alive_players)
             protected_player = next(p for p in self.players if p.name == protected_name)
             print(f"Angel {angel.name} protects {protected_player.name}.")
         
         if werewolf:
             alive_players = [p.name for p in self.players if p.alive and p != werewolf]
-            target_name = self.get_ai_decision(werewolf, "choose a player to attack", alive_players)
+            # target_name = self.get_ai_decision(werewolf, "choose a player to attack", alive_players)
             target = next(p for p in self.players if p.name == target_name)
             if target == protected_player:
                 print(f"Werewolf {werewolf.name} attacks {target.name}, but they are protected!")
@@ -121,7 +121,7 @@ class WerewolfGame:
 
         if investigator:
             alive_players = [p.name for p in self.players if p.alive and p != investigator]
-            suspect_name = self.get_ai_decision(investigator, "choose a player to investigate", alive_players)
+            # suspect_name = self.get_ai_decision(investigator, "choose a player to investigate", alive_players)
             suspect = next(p for p in self.players if p.name == suspect_name)
             result = "Werewolf" if suspect.role == "Werewolf" else "Not a Werewolf"
             print(f"Investigator {investigator.name} investigates {suspect.name} and learns they are: {result}.")
@@ -134,13 +134,14 @@ class WerewolfGame:
             messages = self.ai_agents[player.name] # get chat history
 
             prompt = f"""
-            The following players are still alive: {', '.join(alive_players)}
+            The following players are still alive: {', '.join(p.name for p in alive_players)}
             What would you like to tell the other players? 
             You can tell them any information you know.
             You can relay false information if you think it is beneficial. 
             You can bluff about what role you are. 
-            Remember there can only be one of each role.
             You should definetly do this if you are the Werewolf.
+            Remember there can only be one of each role.
+            
             Suggest a player for execution if you suspect someone. 
 
             Please keep your responses to only a sentence or two. 
