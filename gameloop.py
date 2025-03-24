@@ -15,19 +15,25 @@ class Player:
         return f"{self.name} ({'Alive' if self.alive else 'Dead'}) - {self.role}"
 
 class WerewolfGame:
-    def __init__(self):
+    def __init__(self, playercount):
+        self.playercount = playercount
         self.players = []
         self.ai_agents = {}
         self.werewolf_role = ["Werewolf"]
         self.good_roles_pool = ["Investigator", "Angel", "Fool", "Villager", "Villager", "Villager"]
-        self.player_names = ["Alice", "Bob", "Charlie", "David", "Eve"]
+        self.player_names = ["Alice", "Nick", "Charlie", "Eve", "Isaac"] 
+        if playercount > 5:
+            self.good_roles_pool.append("Villager")
+            self.player_names.append("Cooper")
+            if playercount > 6:
+                self.player_names.append("Alseid")
         self.assign_roles()
         self.game_over = False
         self.fool_wins = False
         self.initialize_ai_players()
 
     def assign_roles(self):
-        chosen_good_roles = random.sample(self.good_roles_pool, 4)  # Select 4 random good roles
+        chosen_good_roles = random.sample(self.good_roles_pool, self.playercount - 1)  # Select 1 less than playercount random good roles
         all_roles = self.werewolf_role + chosen_good_roles
         random.shuffle(all_roles)
         
@@ -191,7 +197,7 @@ class WerewolfGame:
 
             messages.append({"role": "assistant", "content": "I would vote for: " + choice})
             # print response
-            print(choice)
+            print(player.name + " says: I would vote for" + choice)
 
             try: 
                 vote_data = json.loads(choice)
@@ -216,6 +222,7 @@ class WerewolfGame:
                 break
             nominee_name = next((vote for vote in nominator.votes if vote in available_nominations), None)
             if not nominee_name:
+                print(nominator.name + " passes")
                 continue
             print(f"{nominator.name} nominates {nominee_name}.")
             nominations.add(nominee_name)
@@ -264,5 +271,7 @@ class WerewolfGame:
             time.sleep(1)
 
 if __name__ == "__main__":
-    game = WerewolfGame()
+    playercount = 7
+    # works with 5, 6, or 7 players, simply modify playercount
+    game = WerewolfGame(playercount)
     game.play()
