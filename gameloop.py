@@ -15,6 +15,7 @@ class Player:
 class WerewolfGame:
     def __init__(self):
         self.players = []
+        self.ai_agents = {}
         self.werewolf_role = ["Werewolf"]
         self.good_roles_pool = ["Investigator", "Angel", "Fool", "Villager", "Villager", "Villager"]
         self.player_names = ["Alice", "Bob", "Charlie", "David", "Eve"]
@@ -37,6 +38,9 @@ class WerewolfGame:
 
     def initialize_ai_players(self):
         for player in self.players:
+            self.ai_agents[player.name] = [
+                {"role": "system", "content": f"You are {player.name}, a player in a Werewolf game. Your role is {player.role}."}
+            ]
             self.introduce_ai_player(player)
     
     def introduce_ai_player(self, player):
@@ -56,26 +60,36 @@ class WerewolfGame:
         Respond with only the word yes if you understand. No explinations.
         """
         try:
-            response = ollama.chat(model="gemma:2b", messages=[{"role": "user", "content": prompt}])
+            # response = ollama.chat(model="mistral", messages=[{"role": "user", "content": prompt}])
+            self.ai_agents[player.name].append({"role": "user", "content": prompt})
             print(f"AI {player.name} initialized: {response['message']['content']}")
         except Exception as e:
             print(f"Error initializing AI for {player.name}: {e}")
 
     def get_ai_decision(self, player, decision_type, options):
+    
+        # Give AI the current circumstances and ask for direction
+
         prompt = f"""
         You are {player.name}, playing as {player.role} in a game of Werewolf.
         The following players are still alive: {', '.join(options)}
         
         Your task is to make a decision: {decision_type}.
-        Respond with ONLY one name from the list below. No explanations.
-    
-        Options: {', '.join(options)}
+        Respond with ONLY one name from the list. No explanations.
     
         Answer format: [Exact player name]
         """
+
+        messages = self.ai_agents[player.name]  # Get player's chat history
+
+        messages.append({"role": "user", "content": prompt})  # Add prompt to chat history
         
-        response = ollama.chat(model="gemma:2b", messages=[{"role": "user", "content": prompt}])
-        choice = response['message']['content'].strip()
+        response = ollama.chat(model="mistral", messages=messages) # get AI decision
+
+        choice = response['message']['content'].strip() #get the text from the response
+
+        messages.append({"role": "assistant", "content": choice})
+
         if choice in options:
             return choice
         else:
@@ -113,9 +127,40 @@ class WerewolfGame:
             print(f"Investigator {investigator.name} investigates {suspect.name} and learns they are: {result}.")
 
     def nomination_phase(self):
+        print("\n--- Discussion Phase ---")
+        alive_players = [p for p in self.players if p.alive]
+
+        for player in alive_players:
+            messages = self.ai_agents[player.name] # get chat history
+
+            prompt = f"""
+            The following players are still alive: {', '.join(alive_players)}
+            What would you like to tell the other players? 
+            You can tell them any information you know.
+            You can relay false information if you think it is beneficial. 
+            You can bluff about what role you are. 
+            Remember there can only be one of each role.
+            You should definetly do this if you are the Werewolf.
+            Suggest a player for execution if you suspect someone. 
+
+            Please keep your responses to only a sentence or two. 
+            Remember to tell us your name.
+            """
+            # append discussion prompt
+            messages.append({"role": "user", "content": prompt})
+            
+            # Send prompt
+            response = ollama.chat(model="mistral", messages=messages) # get AI decision
+
+            # print response
+            print(response)
+
+            for p in alive_players:
+                # append response to prompt
+                self.ai_agents[p].append({"role": "assistant", "content": response})
+
         print("\n--- Nomination Phase ---")
         nominations = set()
-        alive_players = [p.name for p in self.players if p.alive]
         
         while len(nominations) < len(alive_players) - 1:
             nominator_name = random.choice(alive_players)
@@ -141,7 +186,7 @@ class WerewolfGame:
         print(f"Votes for {nominee_name}: {', '.join(votes)}")
         if len(votes) > len(alive_players) / 2:
             print(f"{nominee_name} has been executed!")
-            if nominee_name.role == "Fool":
+            if next(p for p in self.players if p.name == nominee_name).role == "Fool":
                 print("\nThe Fool has been executed and wins the game!")
                 self.game_over = True
             next(p for p in self.players if p.name == nominee_name).alive = False
