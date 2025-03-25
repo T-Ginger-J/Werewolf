@@ -144,7 +144,7 @@ class WerewolfGame:
             prompt = f"""
             The following players are still alive: {', '.join(p.name for p in alive_players)}
             What would you like to tell the other players? 
-            You can tell them any information you know.
+            You should claim to be a role (Villager, Investigator, or Angel)
             You can relay false information if you think it is beneficial. 
             You can bluff about what role you are. 
             You should definetly do this if you are the Werewolf.
@@ -181,7 +181,8 @@ class WerewolfGame:
             Based on the current game state, return a JSON object with a list of players you would nominate.
             Do not add any explinations, just say which players you think are potentially the werewolf.
             You should name at least one player. 
-            You must follow this Example format:
+            Only respond with the JSON object and no other words.
+            You must follow this Example format: 
             {{
                 "votes": ["Player1", "Player2", "Player3"]
             }}
@@ -271,7 +272,7 @@ class WerewolfGame:
             time.sleep(1)
 
 if __name__ == "__main__":
-    playercount = 7
+    playercount = 6
     # works with 5, 6, or 7 players, simply modify playercount
     game = WerewolfGame(playercount)
     game.play()
