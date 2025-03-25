@@ -36,68 +36,68 @@ Inspired by https://github.com/raphydaphy/clocktower-ai which runs much faster a
 
 In case you can't get the AI model working, here is an example game of 6 players than ran on my computer.
 
---- Players and Roles ---
--Alice is a Villager 
--Nick is a Investigator
--Charlie is a Werewolf
--Eve is a Angel
--Isaac is a Villager
--Cooper is a Villager
+--- Players and Roles ---  
+Alice is a Villager  
+Nick is a Investigator  
+Charlie is a Werewolf  
+Eve is a Angel  
+Isaac is a Villager  
+Cooper is a Villager  
 
---- Night Phase ---
--Angel Eve protects Alice.
--Werewolf Charlie attacks Eve.
--Investigator Nick investigates Cooper and learns they are: Not a Werewolf.
+--- Night Phase ---  
+Angel Eve protects Alice.  
+Werewolf Charlie attacks Eve.  
+Investigator Nick investigates Cooper and learns they are: Not a Werewolf.  
 
---- Discussion Phase ---
--AI Alice says: I think it's important we stay vigilant and work together to figure out who the Werewolf is. Let's vote for Nick tonight.
--AI Nick says: I have uncovered some crucial information about our group. Let's vote for Alice tonight.
--AI Charlie says: AI Charlie says: I found a hidden scroll with strange symbols on it, but don't know what it means. Let's vote for Isaac tonight.
--AI Isaac says: I found a strange symbol on Charlie's scroll, it could mean danger. Vote for Charlie tonight.
--AI Cooper says: AI Cooper says: I found a scroll with symbols, but I don't know what they mean. Let's vote for Nick tonight.
--Alice says: I would vote for{
+--- Discussion Phase ---  
+AI Alice says: I think it's important we stay vigilant and work together to figure out who the Werewolf is. Let's vote for Nick tonight.  
+AI Nick says: I have uncovered some crucial information about our group. Let's vote for Alice tonight.  
+AI Charlie says: AI Charlie says: I found a hidden scroll with strange symbols on it, but don't know what it means. Let's vote for Isaac tonight.  
+AI Isaac says: I found a strange symbol on Charlie's scroll, it could mean danger. Vote for Charlie tonight.  
+AI Cooper says: AI Cooper says: I found a scroll with symbols, but I don't know what they mean. Let's vote for Nick tonight.  
+Alice says: I would vote for{
         "votes": ["Nick", "Cooper"]
-    }
--Nick says: I would vote for{
+    }  
+Nick says: I would vote for{
        "votes": ["Alice", "Charlie"]
-    }
--Charlie says: I would vote for{
+    }  
+Charlie says: I would vote for{
         "votes": ["Alice", "Isaac", "Cooper"]
-    }
--Isaac says: I would vote for{
+    }  
+Isaac says: I would vote for{
         "votes": ["Alice", "Nick", "Cooper"]
-    }
--Cooper says: I would vote for{
+    }  
+Cooper says: I would vote for{
        "votes": ["Nick", "Alice"]
-    }
+    }  
 
---- Nomination Phase ---
--Charlie nominates Alice.
--Votes for Alice: Nick, Charlie, Isaac, Cooper
--Alice has been executed!
+--- Nomination Phase ---  
+Charlie nominates Alice.  
+Votes for Alice: Nick, Charlie, Isaac, Cooper  
+Alice has been executed!  
 
---- Night Phase ---
--Werewolf Charlie attacks Nick.
--Investigator Nick investigates Cooper and learns they are: Not a Werewolf.
+--- Night Phase ---  
+Werewolf Charlie attacks Nick.  
+Investigator Nick investigates Cooper and learns they are: Not a Werewolf.  
 
---- Discussion Phase ---
--AI Charlie says: AI Charlie says: I found a scroll with strange symbols, and I think it's related to the Werewolf. Vote for Isaac tonight.
--AI Isaac says: AI Isaac says: I found a scroll with strange symbols, it could mean danger. Vote for Charlie tonight.
--AI Cooper says: AI Cooper says: I found a scroll with symbols, but I don't know what they mean. Let's vote for Charlie tonight.
--Charlie says: I would vote for{
+--- Discussion Phase ---  
+AI Charlie says: AI Charlie says: I found a scroll with strange symbols, and I think it's related to the Werewolf. Vote for Isaac tonight.  
+AI Isaac says: AI Isaac says: I found a scroll with strange symbols, it could mean danger. Vote for Charlie tonight.  
+AI Cooper says: AI Cooper says: I found a scroll with symbols, but I don't know what they mean. Let's vote for Charlie tonight.  
+Charlie says: I would vote for{
         "votes": ["Isaac", "Cooper"]
-    }
--Isaac says: I would vote for{
+    }  
+Isaac says: I would vote for{
         "votes": ["Charlie", "Cooper"]
-    }
--Cooper says: I would vote for{
+    }  
+Cooper says: I would vote for{
         "votes": ["Charlie", "Isaac"]
-    }
+    }  
 
---- Nomination Phase ---
--Cooper nominates Charlie.
--Votes for Charlie: Isaac, Cooper
--Charlie has been executed!
+--- Nomination Phase ---  
+Cooper nominates Charlie.  
+Votes for Charlie: Isaac, Cooper  
+Charlie has been executed!  
 
 Villagers win!
 
