@@ -91,9 +91,7 @@ class WerewolfGame:
 
         messages = self.ai_agents[player.name]  # Get player's chat history
         
-        response = ollama.chat(model="mistral", messages=messages + [{"role": "user", "content": prompt}]) # get AI decision
-
-        choice = response['message']['content'].strip() #get the text from the response
+        choice = self.callAI(messages, prompt)
 
         if choice in options:
             return choice
@@ -157,9 +155,7 @@ class WerewolfGame:
             # append discussion prompt
             
             # Send prompt
-            response = ollama.chat(model="mistral", messages=messages + [{"role": "user", "content": prompt}]) # get AI decision
-
-            choice = response['message']['content'].strip()
+            choice = self.callAI(messages, prompt)
 
             # print response
             choice = "AI " + player.name + " says: " + choice
@@ -188,13 +184,8 @@ class WerewolfGame:
             }}
             """
 
-            #instead of appending this message to the chat history, make a temporary
-
-            
             # Send prompt
-            response = ollama.chat(model="mistral", messages=messages + [{"role": "user", "content": prompt}]) # get AI decision
-
-            choice = response['message']['content'].strip()
+            choice = self.callAI(messages, prompt)
 
             messages.append({"role": "assistant", "content": "I would vote for: " + choice})
             # print response
@@ -260,6 +251,10 @@ class WerewolfGame:
         elif villagers_alive <= 2:
             print("\nWerewolf wins!")
             self.game_over = True
+
+    def callAI(self, messages, prompt):
+        response = ollama.chat(model="mistral", messages=messages + [{"role": "user", "content": prompt}]) # get AI decision
+        return response['message']['content'].strip()
 
     def play(self):
         while not self.game_over:
