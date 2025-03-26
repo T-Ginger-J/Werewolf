@@ -6,7 +6,7 @@ import ollama
 
 import google.generativeai as genai
 
-genai.configure(api_key="AIzaSyDYuCWkIxd0GGE0bWmdkn_yoQD234UopAo")
+genai.configure(api_key="Gemini Key Here")
 
 class Player:
     def __init__(self, name, role):
@@ -243,8 +243,33 @@ class WerewolfGame:
             self.ai_agents[player].append({"role": "system", "content": message})
 
     def discussion_phase(self):
-        print("\n--- Discussion Phase ---")
         alive_players = [p for p in self.players if p.alive]
+
+        print("\n--- Privaate Conversation Phase ---")
+
+        # define number of conversation loops (the number of private conversations each player will have)
+
+        # create subsets (conversation) of players (groups of 2, one group of 3 if there is odd number of players alive)
+
+        # loop through conversations
+
+        # Append "you are in a private conversation between these players: X, Y, Z"
+
+        # each player in conversation speaks twice
+
+        # after each response, add it to history of all players in the conversation
+
+        print("\n--- Self Reflection Phase ---")
+
+        # loop through all alive players
+
+        # get the private thoughts of each player (What role they suspect each player is, what role they want to publicly claim, who is claiming the same role as another, who they want to execute)
+
+        # add an extra prompt for the werewolf to think about who to target
+
+        # append the private thoughts to the history 
+
+        print("\n--- Public Discussion Phase ---")
 
         random.shuffle(alive_players)
 
@@ -279,7 +304,6 @@ class WerewolfGame:
 
             Please keep your responses to 2-3 short sentences.  
             """
-            # append discussion prompt
             
             # Send prompt
             choice = self.callAI(messages, prompt)
