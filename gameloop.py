@@ -7,9 +7,13 @@ import ollama
 class Player:
     def __init__(self, name, role):
         self.name = name
-        self.role = role
+        if (role == "Drunk"):
+            self.role = "Investigator"
+        else:
+            self.role = role
         self.alive = True
         self.votes = []
+        self.true_role = role
 
     def __repr__(self):
         return f"{self.name} ({'Alive' if self.alive else 'Dead'}) - {self.role}"
@@ -20,20 +24,21 @@ class WerewolfGame:
         self.players = []
         self.ai_agents = {}
         self.werewolf_role = ["Werewolf"]
-        self.good_roles_pool = ["Investigator", "Angel", "Fool", "Villager", "Villager", "Villager"]
+        self.true_roles_pool = ["Investigator", "Angel", "Fool", "Villager", "Veteran", "Drunk", "Medium", "Sage", "Saint", ]
         self.player_names = ["Alice", "Nick", "Charlie", "Eve", "Isaac"] 
         if playercount > 5:
-            self.good_roles_pool.append("Villager")
+            self.true_roles_pool.append("Psycho")
             self.player_names.append("Cooper")
             if playercount > 6:
                 self.player_names.append("Alseid")
         self.assign_roles()
         self.game_over = False
-        self.fool_wins = False
+        self.night = 1
         self.initialize_ai_players()
 
     def assign_roles(self):
-        chosen_good_roles = random.sample(self.good_roles_pool, self.playercount - 1)  # Select 1 less than playercount random good roles
+        random.shuffle(self.player_names)
+        chosen_good_roles = random.sample(self.true_roles_pool, self.playercount - 1)  # Select 1 less than playercount random good roles
         all_roles = self.werewolf_role + chosen_good_roles
         random.shuffle(all_roles)
         
@@ -42,7 +47,7 @@ class WerewolfGame:
         
         print("\n--- Players and Roles ---")
         for player in self.players:
-            print(f"{player.name} is a {player.role}")
+            print(f"{player.name} is a {player.true_role}")
 
     def initialize_ai_players(self):
         for player in self.players:
@@ -58,13 +63,19 @@ class WerewolfGame:
         - The Werewolf eliminates one player per night.
         - The Investigator can check if a player is a Werewolf.
         - The Angel can protect one player per night.
-        - The Fool wins if they are executed.
-        - Villagers have no special ability.
-        - There can be at most one of each non Villager role. 
+        - The Veteran wants to die at night. They get to kill a player if they do
+        - The Fool wins if they are executed. Everyone else loses.
+        - The Saint causes the good team to lose if they are executed. They want to avoid being executed at all costs.
+        - The Drunk thinks they are investigator, but gets false results.
+        - The Psycho kills every night but still wins with good.
+        - The Sage starts the game knows one player is not the werewolf.
+        - The Medium learns the roles of characters who die.
+        - Villagers have no special ability. 
         - Any of the roles besides Werewolf could not be in play. 
         
         The goal of the Werewolf is to eliminate all other players.
-        The goal of the Villagers (and other good roles) is to find and execute the Werewolf.
+        The goal of the Villagers (and other good roles) is to find and kill the Werewolf.
+        You should be trying to find out what role everyone is, and kill the ones who are most a threat.
         """
         try:
             # response = ollama.chat(model="mistral", messages=[{"role": "user", "content": prompt}])
@@ -80,6 +91,7 @@ class WerewolfGame:
         # Give AI the current circumstances and ask for direction
 
         prompt = f"""
+        it is night {self.night}
         You are {player.name}, playing as {player.role} in a game of Werewolf.
         The following players are still alive: {', '.join(options)}
         
@@ -102,63 +114,134 @@ class WerewolfGame:
     def night_phase(self):
         print("\n--- Night Phase ---")
         werewolf = next(p for p in self.players if p.role == "Werewolf")
-        investigator = next((p for p in self.players if p.role == "Investigator" and p.alive), None)
-        angel = next((p for p in self.players if p.role == "Angel" and p.alive), None)
+        
+        angel = next((p for p in self.players if p.role == "Angel"), None)
+
+        veteran = next((p for p in self.players if p.role == "Veteran"), None)
+
+        dead = []
 
         protected_player = None
         if angel:
             alive_players = [p.name for p in self.players if p.alive and p != angel]
             protected_name = self.get_ai_decision(angel, "choose a player to protect", alive_players)
             protected_player = next(p for p in self.players if p.name == protected_name)
-            self.ai_agents[angel.name].append({"role": "assistant", "content": "I protected " + protected_name})
+            self.ai_agents[angel.name].append({"role": "assistant", "content": "night " + self.night + " I protected " + protected_name})
             print(f"Angel {angel.name} protects {protected_player.name}.")
         
         if werewolf:
             alive_players = [p.name for p in self.players if p.alive and p != werewolf]
             target_name = self.get_ai_decision(werewolf, "choose a player to attack", alive_players)
-            target = next(p for p in self.players if p.name == target_name)
+            target = next(p for p in self.players if p.name == target_name) 
+
+
             if target == protected_player:
                 print(f"Werewolf {werewolf.name} attacks {target.name}, but they are protected!")
             else:
+                dead.append(target)
                 print(f"Werewolf {werewolf.name} attacks {target.name}.")
                 target.alive = False
+                if target.role == "Veteran": 
+                    target_name = self.get_ai_decision(veteran, "you have died, choose a player to kill", [p.name for p in self.players if p.alive])
+                    target = next(p for p in self.players if p.name == target_name)
+                    print(f"Veteran {veteran.name} attacks {target.name}.")
+                    target.alive = False
+                    dead.append(target)
+                    if target == werewolf:
+                        self.check_winner()
+
+        investigator = next((p for p in self.players if p.true_role == "Investigator" and p.alive), None)
+        drunk = next((p for p in self.players if p.true_role == "Drunk" and p.alive), None)
 
         if investigator:
             alive_players = [p.name for p in self.players if p.alive and p != investigator]
             suspect_name = self.get_ai_decision(investigator, "choose a player to investigate", alive_players)
             suspect = next(p for p in self.players if p.name == suspect_name)
             result = "Werewolf" if suspect.role == "Werewolf" else "Not a Werewolf"
-            self.ai_agents[investigator.name].append({"role": "assistant", "content": "I investigated " + suspect_name + " and learned that they are " + result})
+            self.ai_agents[investigator.name].append({"role": "assistant", "content": "night " + self.night + " I investigated " + suspect_name + " and learned that they are " + result})
             print(f"Investigator {investigator.name} investigates {suspect.name} and learns they are: {result}.")
+
+        if drunk:
+            alive_players = [p.name for p in self.players if p.alive and p != drunk]
+            suspect_name = self.get_ai_decision(drunk, "choose a player to investigate", alive_players)
+            suspect = next(p for p in self.players if p.name == suspect_name)
+            result = "Werewolf" if not suspect.role == "Werewolf" else "Not a Werewolf"
+            self.ai_agents[investigator.name].append({"role": "assistant", "content": "night " + self.night + " I investigated " + suspect_name + " and learned that they are " + result})
+            print(f"Drunk {investigator.name} investigates {suspect.name} and learns they are: {result}.")
+
+        sage = next((p for p in self.players if p.role == "Sage" and p.alive), None)
+        medium = next((p for p in self.players if p.role == "Medium" and p.alive), None)
+        psycho = next((p for p in self.players if p.role == "Psycho" and p.alive), None)
         
+        if sage:
+            alive_players = [p.name for p in self.players if p.alive and p != werewolf]
+            not_WW = random.choice(alive_players)
+            self.ai_agents[sage.name].append({"role": "assistant", "content": "night " + self.night + " I learned " + not_WW + " is not a werewolf"})
+            print(f"Sage {sage.name} learns {not_WW} is not a werewolf")
+        
+        if medium:
+            seen = dead[0]
+            self.ai_agents[medium.name].append({"role": "assistant", "content": "night " + self.night + " I learned " + seen.name + " was the " + seen.true_role})
+            print(f"Medium {medium.name} learns {seen.name} is a {seen.true_role}")
+
+        if psycho:
+            alive_players = [p.name for p in self.players if p.alive and p != psycho]
+            target_name = self.get_ai_decision(psycho, "choose a player to kill", alive_players)
+            dead.append(target)
+            print(f"Psycho {psycho.name} attacks {target.name}.")
+            target.alive = False
+            if target == werewolf:
+                self.check_winner()
+        
+        message = str(random.shuffle(dead))
+        if len(dead) == 0:
+            message = "Nobody died last night"
+        else:
+            message += " ha"
+            if len(dead) == 1:
+                message += "s died"
+            else:
+                message += "ve died"
+
+        for player in alive_players:
+            self.ai_agents[player].append({"role": "system", "content": message})
 
     def discussion_phase(self):
         print("\n--- Discussion Phase ---")
         alive_players = [p for p in self.players if p.alive]
 
+        random.shuffle(alive_players)
+
         for player in alive_players:
             messages = self.ai_agents[player.name] # get chat history
-
-            prompt = f"""
+            prompt = "It is day " + self.night + ". you are a " + player.role
+            if player.role == "Werewolf":
+                prompt += ". You must not tell anyone this, instead you should falsely claim to be a role that you think will not be executed. You CANNOT pretend to be a villager"
+            prompt += f"""
             The following players are still alive: {', '.join(p.name for p in alive_players)}
             What would you like to tell the other players? 
-            You should claim to be a role (Villager, Investigator, or Angel)
-            You can relay false information if you think it is beneficial. 
+            You should claim to be a role (Villager, Investigator, Angel, Veteran, Sage, Medium, Saint)
             You can bluff about what role you are. 
-            You should definetly do this if you are the Werewolf.
-            Remember there can only be one of each role.
+            If you learned something last night, you should tell the other players 
+            You can relay false information and should do so if you are bluffing about what role you are
+
+            Remember there can only be one of each role, but there exists a drunk who thinks they are investigator.
             
             Suggest a player for execution if you suspect someone. 
 
-            Please keep your responses to only 2 sentences. 
+            Please keep your responses to 2-3 short sentences.  
             """
             # append discussion prompt
             
             # Send prompt
             choice = self.callAI(messages, prompt)
+            
+            # check if response is formatted
+            scan = "AI "+player.name 
 
-            # print response
-            choice = "AI " + player.name + " says: " + choice
+            if (not choice.startswith(scan)):
+                #format if 
+                choice = "AI " + player.name + " says: " + choice
 
             print(choice)
 
@@ -173,10 +256,13 @@ class WerewolfGame:
             messages = self.ai_agents[player.name] # get chat history
 
             prompt = f"""
+            you are a {player.role}
             The following players are still alive: {', '.join(p.name for p in alive_players)}
             Based on the current game state, return a JSON object with a list of players you would nominate.
             Do not add any explinations, just say which players you think are potentially the werewolf.
-            You should name at least one player. 
+            You should name at least one player. You can name as many as you like.
+            The more players you name the more likely an execution is to occur.
+            The first name should be the player you most want to execute (if any).
             Only respond with the JSON object and no other words.
             You must follow this Example format: 
             {{
@@ -187,7 +273,7 @@ class WerewolfGame:
             # Send prompt
             choice = self.callAI(messages, prompt)
 
-            messages.append({"role": "assistant", "content": "I would vote for: " + choice})
+            messages.append({"role": "assistant", "content": "day " + self.night + " I would vote for: " + choice})
             # print response
             print(player.name + " says: I would vote for" + choice)
 
@@ -211,6 +297,7 @@ class WerewolfGame:
             available_nominations = [p.name for p in alive_players if p.name not in nominations and p.name != nominator.name]
             nominators = [p for p in nominators if  p.name != nominator.name]
             if not available_nominations:
+                print("Nominations are closed. No one is executed.")
                 break
             nominee_name = next((vote for vote in nominator.votes if vote in available_nominations), None)
             if not nominee_name:
@@ -220,6 +307,8 @@ class WerewolfGame:
             nominations.add(nominee_name)
             if self.voting_phase(nominee_name):
                 break
+        
+        self.night+=1
     
     def voting_phase(self, nominee_name):
         votes = []
@@ -235,6 +324,9 @@ class WerewolfGame:
             print(f"{nominee_name} has been executed!")
             if next(p for p in self.players if p.name == nominee_name).role == "Fool":
                 print("\nThe Fool has been executed and wins the game!")
+                self.game_over = True
+            if next(p for p in self.players if p.name == nominee_name).role == "Saint":
+                print("\nThe Saint has been executed and the Werewolf the game!")
                 self.game_over = True
             next(p for p in self.players if p.name == nominee_name).alive = False
             return True
