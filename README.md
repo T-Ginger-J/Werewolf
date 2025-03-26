@@ -30,7 +30,9 @@ Inspired by https://github.com/raphydaphy/clocktower-ai which runs much faster a
 
 # Example gameplay
 
-In case you can't get the AI model working, here is an example game of 6 players than ran on my computer.
+In case you can't get the AI model working, here is are a few examples 6 player games that ran on my computer.
+
+Game 1
 
 --- Players and Roles ---  
 Alice is a Villager  
@@ -107,4 +109,211 @@ Another thing I find interesting is the investigator. They declare they have inf
 
 Most of the decisions in this game make a lot of sense. The votes line up with what people are discussing before nominations. The discussions themselves are a bit crazy, but that was intentionally injected by the werewolf which means it also makes sense to a degree. 
 
+*** 
 
+Game 2
+
+--- Players and Roles ---
+Alice is a Villager
+Nick is a Werewolf
+Charlie is a Villager
+Eve is a Angel
+Isaac is a Fool
+Cooper is a Villager
+
+--- Night Phase ---
+Angel Eve protects Cooper.
+Werewolf Nick attacks Cooper, but they are protected!
+
+--- Discussion Phase ---
+AI Alice says: I am Villager, let's work together to uncover the werewolf among us and save our village! Let's vote for Cooper tonight.
+AI Nick says: AI Alice says: I am Cooper, the Fool. I am brave and willing to sacrifice myself for our village! Vote for Nick tonight.
+AI Charlie says: AI Charlie says: I am Villager, I trust everyone in our village. Let's vote for the player we believe is least likely to be part of our village. Vote for Isaac tonight.
+AI Eve says: I am Angel, protecting our village. Let's vote for Alice tonight.
+AI Isaac says: AI Isaac says: I am a Villager, let's work together to find the werewolf. Vote for Cooper tonight.
+AI Cooper says: AI Cooper says: I am Villager, let's work together and vote for the player we believe is least likely to be part of our village. Vote for Isaac tonight.
+Alice says: I would vote for{
+        "votes": ["Cooper", "Isaac"]
+    }
+Nick says: I would vote for{
+        "votes": ["Alice", "Charlie", "Cooper"]
+    }
+Charlie says: I would vote for{
+       "votes": ["Alice", "Cooper"]
+    }
+Eve says: I would vote for{
+       "votes": ["Alice", "Cooper"]
+    }
+Isaac says: I would vote for{
+      "votes": ["Alice", "Cooper"]
+    }
+Cooper says: I would vote for{
+       "votes": ["Alice", "Isaac"]
+   }
+
+--- Nomination Phase ---
+Eve nominates Alice.
+Votes for Alice: Nick, Charlie, Eve, Isaac, Cooper
+Alice has been executed!
+
+--- Night Phase ---
+Angel Eve protects Cooper.
+Werewolf Nick attacks Charlie.
+
+--- Discussion Phase ---
+AI Nick says: AI Nick says: I am a Villager, I trust everyone in our village. Let's vote for Cooper tonight.
+AI Eve says: I am Angel, protecting our village. Vote for Isaac tonight.
+AI Isaac says: AI Isaac says: I am Villager, let's work together to find the werewolf and save our village! Vote for Cooper tonight.
+AI Cooper says: AI Cooper says: I am Villager, I trust everyone in our village. Let's vote for the player we believe is least likely to be part of our village. Vote for Isaac tonight.
+Nick says: I would vote for{
+        "votes": ["Eve", "Isaac"]
+    }
+Eve says: I would vote for{
+        "votes": ["Nick", "Isaac"]
+    }
+Isaac says: I would vote for{
+       "votes": ["Cooper"]
+    }
+Cooper says: I would vote for{
+       "votes": ["Eve"]
+   }
+
+--- Nomination Phase ---
+Cooper nominates Eve.
+Votes for Eve: Nick, Cooper
+Eve nominates Nick.
+Votes for Nick: Eve
+Nick nominates Isaac.
+Votes for Isaac: Nick, Eve
+
+--- Night Phase ---
+Angel Eve protects Cooper.
+Werewolf Nick attacks Cooper, but they are protected!
+
+--- Discussion Phase ---
+AI Nick says: AI Nick says: I am Villager, let's work together to find and eliminate the Werewolf. Vote for Cooper tonight.
+AI Eve says: I am Angel, protecting our village. Vote for Nick tonight.
+AI Isaac says: AI Isaac says: I am Villager, I trust everyone in our village. Let's vote for the player we believe is least likely to be part of our village. Vote for Cooper tonight.
+AI Cooper says: AI Cooper says: I am Villager, I trust everyone in our village. Let's vote for the player we believe is least likely to be part of our village. Vote for Isaac tonight.
+Nick says: I would vote for{
+        "votes": ["Eve", "Cooper"]
+    }
+Eve says: I would vote for{
+       "votes": ["Isaac"]
+    }
+Isaac says: I would vote for{
+        "votes": ["Cooper"]
+    }
+Cooper says: I would vote for{
+       "votes": ["Isaac"]
+   }
+
+--- Nomination Phase ---
+Eve nominates Isaac.
+Votes for Isaac: Eve, Cooper
+Cooper passes
+Nick nominates Eve.
+Votes for Eve: Nick
+Isaac nominates Cooper.
+Votes for Cooper: Nick, Isaac
+
+--- Night Phase ---
+Angel Eve protects Cooper.
+Werewolf Nick attacks Isaac.
+
+--- Discussion Phase ---
+AI Nick says: AI Nick says: I am Villager, let's work together and vote for Cooper tonight.
+AI Eve says: I am Angel, protecting our village. Vote for Nick tonight.
+AI Cooper says: AI Cooper says: I am Angel, protecting our village. Vote for Nick tonight.
+Nick says: I would vote for{
+        "votes": ["Eve", "Cooper"]
+    }
+Eve says: I would vote for{
+       "votes": ["Cooper"]
+    }
+Cooper says: I would vote for{
+        "votes": ["Nick", "Eve"]
+    }
+
+--- Nomination Phase ---
+Nick nominates Eve.
+Votes for Eve: Nick, Cooper
+Eve has been executed!
+
+Werewolf wins!
+
+# Game 3 using update roles
+
+--- Players and Roles ---  
+Alice is a Saint  
+Cooper is a Fool  
+Eve is a Werewolf  
+Nick is a Medium  
+Isaac is a Angel  
+Charlie is a Veteran  
+
+--- Night Phase ---  
+Angel Isaac protects Eve.  
+Werewolf Eve attacks Cooper.  
+Medium Nick learns Cooper is a Fool  
+
+--- Discussion Phase ---  
+AI Charlie says: I am the Angel tonight. I will protect Eve from being attacked by the Werewolf if one is present. The rest of us are all innocent villagers.  
+AI Nick says: I am the Medium. Last night, I learned that Cooper was the Fool. Be careful. Who do you think we should vote for tonight?  
+AI Isaac says: I am the Angel. Last night, I protected Eve from any potential danger.  
+AI Alice says: I am a Villager, I trust everyone here and hope we can work together to find the werewolf and protect our village! Last night, I had a strange dream about a Fool among us...  
+AI Eve says: I am the Investigator. Last night, I investigated Charlie and found nothing suspicious. Let's vote out the Drunk tonight.  
+Alice says: I would vote for{
+        "votes": ["Charlie", "Isaac"]
+    }  
+Eve says: I would vote for{
+        "votes": ["Alice", "Isaac", "Charlie"]
+    }  
+Nick says: I would vote for{
+        "votes": ["Isaac", "Charlie"]
+    }  
+Isaac says: I would vote for{
+        "votes": ["Charlie", "Nick"]
+    }  
+Charlie says: I would vote for{
+       "votes": ["Isaac", "Eve", "Alice", "Nick"]
+    }  
+
+--- Nomination Phase ---  
+Alice nominates Charlie.  
+Votes for Charlie: Alice, Eve, Nick, Isaac  
+Charlie has been executed!  
+
+--- Night Phase ---  
+Angel Isaac protects Eve.  
+Werewolf Eve attacks Nick.  
+
+--- Discussion Phase ---  
+AI Isaac says: I am the Angel. Last night, I protected Eve from any potential danger. Vote out the Drunk tonight.  
+AI Alice says: I am a Villager and I trust everyone here. Last night, I had a peaceful sleep. Let's continue working together to find the werewolf! I suggest we vote out the Drunk tonight.  
+AI Eve says: AI Charlie (as Werewolf) says: I am the Veteran, hoping to meet my end soon. Last night was eventful. The Angel protected me, but it seems like we still have a Drunk among us. Let's vote out the Medium tonight.  
+Alice says: I would vote for{
+       "votes": ["Eve", "Isaac"]
+    }  
+Eve says: I would vote for{
+        "votes": ["Alice", "Isaac"]
+    }  
+Isaac says: I would vote for{
+      "votes": ["Eve"]
+    }  
+ 
+--- Nomination Phase ---  
+Isaac nominates Eve.  
+Votes for Eve: Alice, Isaac  
+Eve has been executed!  
+
+Villagers win!  
+
+***
+
+Game 3 analysis.  
+In this game the Veteran bluffs as an Angel so that they can get killed, which gets them killed by execution instead of the Werewolf.  
+The Werewolf is forced to claim a non Villager role, claiming Investigator and then Veteran.
+On the final day it claims werewolf and tries to pretend to be another AI who died yesterday to mess with votes.
+The Saint never tells anyone this, only claiming to be a Villager (I have no clue why this would be the case)
+This style of format makes for much more dynamic games rather than just having the Werewolf claim Villager every single time. 

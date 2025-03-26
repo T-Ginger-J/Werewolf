@@ -4,11 +4,15 @@ import json
 
 import ollama
 
+import google.generativeai as genai
+
+genai.configure(api_key="AIzaSyDYuCWkIxd0GGE0bWmdkn_yoQD234UopAo")
+
 class Player:
     def __init__(self, name, role):
         self.name = name
         if (role == "Drunk"):
-            self.role = "Investigator"
+            self.role = "Seer"
         else:
             self.role = role
         self.alive = True
@@ -24,7 +28,7 @@ class WerewolfGame:
         self.players = []
         self.ai_agents = {}
         self.werewolf_role = ["Werewolf"]
-        self.true_roles_pool = ["Investigator", "Angel", "Fool", "Villager", "Veteran", "Drunk", "Medium", "Sage", "Saint", "Immortal"]
+        self.true_roles_pool = ["Seer", "Angel", "Fool", "Villager", "Veteran", "Drunk", "Medium", "Sage", "Saint", "Immortal"]
         self.player_names = ["Alice", "Nick", "Charlie", "Eve", "Isaac"] 
         if playercount > 5:
             self.true_roles_pool.append("Psycho")
@@ -61,12 +65,12 @@ class WerewolfGame:
         You are {player.name}, playing a Werewolf game. Your role is {player.role}.
         Here are the rules:
         - The Werewolf eliminates one player per night.
-        - The Investigator can check if a player is a Werewolf.
+        - The Seer can check if a player is a Werewolf.
         - The Angel can protect one player per night.
         - The Veteran wants the Werewolf to kill them. They get to kill a player if it happens.
         - The Fool wins if they are executed. Everyone else loses.
         - The Saint causes the good team to lose if they are executed. 
-        - The Drunk does not know they are the Drunk, they think they are investigator, but gets false results.
+        - The Drunk does not know they are the Drunk, they think they are Seer, but gets false results.
         - The Psycho kills every night but still wins with good.
         - The Sage starts the game knows one player is not the werewolf.
         - The Medium learns the roles of characters who die.
@@ -131,17 +135,18 @@ class WerewolfGame:
             protected_player = next(p for p in self.players if p.name == protected_name)
             self.ai_agents[angel.name].append({"role": "assistant", "content": "night " + str(self.night) + " I protected " + protected_name})
             print(f"Angel {angel.name} protects {protected_player.name}.")
+            time.sleep(3)
         
         if werewolf:
             alive_players = [p.name for p in self.players if p.alive and p != werewolf]
             target_name = self.get_ai_decision(werewolf, "choose a player to attack", alive_players)
             target = next(p for p in self.players if p.name == target_name) 
-
-            
+    
             if target == protected_player or target == immortal:
                 print(f"Werewolf {werewolf.name} attacks {target.name}, but they are protected!")
                 if target == immortal:
                     print(f"Immortal {immortal.name} becomes mortal")
+                    self.ai_agents[immortal.name].append({"role": "assistant", "content": "night " + str(self.night) + " I was attacked and lost my immortality"})
                     immortal.true_role = "Mortal"
                     immortal = None
             else:
@@ -149,12 +154,14 @@ class WerewolfGame:
                 print(f"Werewolf {werewolf.name} attacks {target.name}.")
                 target.alive = False
                 if target.role == "Veteran": 
+                    time.sleep(3)
                     target_name = self.get_ai_decision(veteran, "you have died, choose a player to kill", [p.name for p in self.players if p.alive])
                     target = next(p for p in self.players if p.name == target_name)
                     if target == protected_player or target == immortal:
                         print(f"Veteran {veteran.name} attacks {target.name}, but they are protected!")
                         if target == immortal:
                             print(f"Immortal {immortal.name} becomes mortal")
+                            self.ai_agents[immortal.name].append({"role": "assistant", "content": "night " + str(self.night) + " I was attacked and lost my immortality"})
                             immortal.true_role = "Mortal"
                             immortal = None
                     else:
@@ -163,6 +170,7 @@ class WerewolfGame:
                         dead.append(target)
                         if target == werewolf:
                             self.check_winner()
+            time.sleep(3)
 
         psycho = next((p for p in self.players if p.role == "Psycho" and p.alive), None)
 
@@ -174,6 +182,7 @@ class WerewolfGame:
                 print(f"Psycho {psycho.name} attacks {target.name}, but they are protected!")
                 if target == immortal:
                         print(f"Immortal {immortal.name} becomes mortal")
+                        self.ai_agents[immortal.name].append({"role": "assistant", "content": "night " + str(self.night) + " I was attacked and lost my immortality"})
                         immortal.true_role = "Mortal"
                         immortal = None
             else:
@@ -182,17 +191,19 @@ class WerewolfGame:
                 target.alive = False
                 if target == werewolf:
                    self.check_winner()
+            time.sleep(3)
 
-        investigator = next((p for p in self.players if p.true_role == "Investigator" and p.alive), None)
+        seer = next((p for p in self.players if p.true_role == "Seer" and p.alive), None)
         drunk = next((p for p in self.players if p.true_role == "Drunk" and p.alive), None)
 
-        if investigator:
-            alive_players = [p.name for p in self.players if p.alive and p != investigator]
-            suspect_name = self.get_ai_decision(investigator, "choose a player to investigate", alive_players)
+        if seer:
+            alive_players = [p.name for p in self.players if p.alive and p != seer]
+            suspect_name = self.get_ai_decision(seer, "choose a player to investigate", alive_players)
             suspect = next(p for p in self.players if p.name == suspect_name)
             result = "Werewolf" if suspect.role == "Werewolf" else "Not a Werewolf"
-            self.ai_agents[investigator.name].append({"role": "assistant", "content": "night " + str(self.night) + " I investigated " + suspect_name + " and learned that they are " + result})
-            print(f"Investigator {investigator.name} investigates {suspect.name} and learns they are: {result}.")
+            self.ai_agents[seer.name].append({"role": "assistant", "content": "night " + str(self.night) + " I investigated " + suspect_name + " and learned that they are " + result})
+            print(f"Seer {seer.name} investigates {suspect.name} and learns they are: {result}.")
+            time.sleep(3)
 
         if drunk:
             alive_players = [p.name for p in self.players if p.alive and p != drunk]
@@ -201,6 +212,7 @@ class WerewolfGame:
             result = "Werewolf" if not suspect.role == "Werewolf" else "Not a Werewolf"
             self.ai_agents[drunk.name].append({"role": "assistant", "content": "night " + str(self.night) + " I investigated " + suspect_name + " and learned that they are " + result})
             print(f"Drunk {drunk.name} investigates {suspect.name} and learns they are: {result}.")
+            time.sleep(3)
 
         sage = next((p for p in self.players if p.role == "Sage" and p.alive), None)
         medium = next((p for p in self.players if p.role == "Medium" and p.alive), None)
@@ -241,8 +253,8 @@ class WerewolfGame:
             prompt = "It is day " + str(self.night) + ". you are a " + player.role
             if player.role == "Werewolf":
                 prompt += ". You must not tell anyone this, instead you should falsely claim to be a role that you think will not be executed. You CANNOT pretend to be a villager."
-            if player.role == "Investigator":
-                prompt += ". Remember that you might not actually be an investigator, there is a chance you are the Drunk. If you found a Werewolf you should push for their execution."
+            if player.role == "Seer":
+                prompt += ". Remember that you might not actually be an seer, there is a chance you are the Drunk. If you found a Werewolf you should push for their execution."
             if player.role == "Fool":
                 prompt += ". Remember that you are trying to seem like the werewolf, but don't make it too obvious."
             if player.role == "Saint":
@@ -252,12 +264,16 @@ class WerewolfGame:
             prompt += f"""
             The following players are still alive: {', '.join(p.name for p in alive_players)}
             What would you like to tell the other players? 
-            You should claim to be a role (Villager, Investigator, Angel, Veteran, Sage, Medium, Saint, Immortal)
-            You can bluff about what role you are. 
+            You should claim to be a role (Villager, Seer, Angel, Veteran, Sage, Medium, Saint, Immortal)
+            You can bluff about what role you are. Try to be consistent with your past role claims, or give justification for why you are chainging your claim.
             If you learned something last night, you should tell the other players 
             You can relay false information and should do so if you are bluffing about what role you are
 
-            Remember there can only be one of each role, but there exists a drunk who thinks they are investigator.
+            Remember there can only be one of each role. You should question anybody claiming the same role.
+
+            There is a fool and werewolf lying about their role. Avoid executing the fool.
+
+            There also could be a drunk who thinks they are seer. 
             
             Suggest a player for execution if you suspect someone. 
 
@@ -276,6 +292,7 @@ class WerewolfGame:
                 choice = "AI " + player.name + " says: " + choice
 
             print(choice)
+            time.sleep(3)
 
             for p in alive_players:
                 # append response to prompt
@@ -309,9 +326,13 @@ class WerewolfGame:
             # Send prompt
             choice = self.callAI(messages, prompt)
 
+            # clearn response
+            choice = choice[7:-3]
+
             messages.append({"role": "assistant", "content": "day " + str(self.night) + " I would vote for: " + choice})
             # print response
             print(player.name + " says: I would vote for" + choice)
+            time.sleep(5)
 
             try: 
                 vote_data = json.loads(choice)
@@ -387,8 +408,9 @@ class WerewolfGame:
             self.game_over = True
 
     def callAI(self, messages, prompt):
-        response = ollama.chat(model="mistral", messages=messages + [{"role": "user", "content": prompt}]) # get AI decision
-        return response['message']['content'].strip()
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content("here is the chat history: " + str(messages) + "now respond to this prompt: " + prompt)
+        return response.text.strip()
 
     def play(self):
         while not self.game_over:
