@@ -6,7 +6,7 @@ import sys
 import google.generativeai as genai
 import google.api_core.exceptions
 
-genai.configure(api_key="Your Gemini Key")
+genai.configure(api_key="AIzaSyBeDj1A3RF6W5qT8R8LbtBRi_9qlOXl9RM")
 
 BLUFF_GUIDE = {
         "Seer": "Seers will claim to have investigated a player and will get either Werewolf or not a Werewolf. Remember that you could be drunk, which means there can be up to 2 good people that think they are seer.",
@@ -38,18 +38,21 @@ class Player:
         else:
             self.color = "good"
         self.bluff = ""
+        self.AI = True
 
     def __repr__(self):
         return f"{self.name} ({'Alive' if self.alive else 'Dead'}) - {self.role}"
 
 class WerewolfGame:
-    def __init__(self, debug=False):
+    def __init__(self, debug=True):
         
         self.playercount = 5  # Default player count
         self.convos = 2
         self.speed = 10
         self.mode = 1
+        self.name = "TJ"
         if debug:
+            self.name = (input ("Enter name: ") or self.name)
             self.playercount = int(input("Enter the number of players: (5-10)") or self.playercount)
             self.convos = int(input("Enter the number of coversations on day 1: (1-3)") or self.convos)
             self.mode = int(input("Enter speed: (1 = fast // 2 = full) ") or self.mode)
@@ -83,24 +86,24 @@ class WerewolfGame:
 
         chosen_good_roles = random.sample(self.true_roles_pool, self.playercount - 1)  # Select 1 less than playercount random good roles
         all_roles = self.werewolf_role + chosen_good_roles
-        print("The following roles are in play: " + str(self.true_roles_pool))
+        print("The following roles could be in play " + str(self.true_roles_pool))
         random.shuffle(all_roles)
         random.shuffle(self.player_names)
+        self.player_names[0] = self.name
+        AIs = True
 
         for i, role in enumerate(all_roles):
             self.players.append(Player(self.player_names[i], role))
         
-        print("\n--- Players and Roles ---")
-        for player in self.players:
-            print(f"{player.name} is a {player.true_role}")
+        human = next(p for p in self.players if p.name == self.name)
 
+        human.AI = False
+        
         werewolf = next(p for p in self.players if p.role == "Werewolf")
 
         bluff = next(r for r in self.true_roles_pool if r not in chosen_good_roles)
         werewolf.bluff = bluff
-        string = bluff + " is the Werewolf's bluff. It is not in play and is safe to bluff as over the course of the game"
-        print(string)
-
+        
     def initialize_ai_players(self):
         for player in self.players:
             # self.ai_agents[player.name] = [{"role": "user", "content": f"You are {player.name}, a player in a Werewolf game. Your role is {player.role}."} ]
@@ -109,6 +112,7 @@ class WerewolfGame:
     def introduce_ai_player(self, player):
         prompt = f"""
         You are {player.name}, playing a Werewolf game. Your role is {player.role}.
+        There is one human playing, they might talk differently but that doesnt make them more or less suspicious
         Here are the evil roles. They have their own win conditions.
         - The Werewolf eliminates one player per night. Wins if they kill everyone
         - The Jester wants to be voted out by the town. They win if do, everyone else loses.
@@ -136,9 +140,9 @@ class WerewolfGame:
         if player.role == "Werewolf":
             prompt += "/n " + player.bluff + " is the Werewolf's bluff. It is not in play and is safe to bluff as over the course of the game. Only you know this information so take advantage of it."
         
-            # response = ollama.chat(model="mistral", messages=[{"role": "user", "content": prompt}])
+        if player.AI == False:   # response = ollama.chat(model="mistral", messages=[{"role": "user", "content": prompt}])
+            print(prompt)
         self.ai_agents[player.name] = [{"role": "user", "content": prompt}]
-            
         
             # print(f"Error initializing AI for {player.name}: {e}")
 
@@ -156,19 +160,25 @@ class WerewolfGame:
     
         Answer format: [Exact option from the list]
         """
+        choice = ""
 
         messages = self.ai_agents[player.name]  # Get player's chat history
-        
-        choice = self.callAI(messages, prompt)
+        if player.AI == False:
+            print(prompt)
+            choice = input("Choice?")
+        else: 
+            choice = self.callAI(messages, prompt)
         if choice.startswith("["):
             choice = choice[1:-1]
 
         if choice in options:
             return choice
         else:
-            print(choice)
-            return random.choice(options) 
-
+            choice = random.choice(options)
+            if player.AI == False:
+                print("randomly chose " + choice)
+            return choice
+            
     def night_phase(self):
         print("\n--- Night Phase ---")
         werewolf = next(p for p in self.players if p.role == "Werewolf")
@@ -193,7 +203,7 @@ class WerewolfGame:
             # Update the first message with the new prompt
             self.ai_agents[monk.name][0]["content"] = updated_prompt
             self.ai_agents[monk.name].append({"role": "assistant", "content": string})
-            print(f"Monk {monk.name} protects {protected_player.name}.")
+            # print(f"Monk {monk.name} protects {protected_player.name}.")
             time.sleep(self.speed+3)
         
         if werewolf:
@@ -203,11 +213,14 @@ class WerewolfGame:
             target = next(p for p in self.players if p.name == target_name) 
     
             if target == protected_player:
-                print(f"Werewolf {werewolf.name} attacks {target.name}, but they are protected!")
+                if werewolf.AI == False:
+                    print(f"Werewolf {werewolf.name} attacks {target.name}, but they survived!")
             else:
                 if target == sailor:
-                    print(f"Sailor {sailor.name} becomes mortal")
-                    
+                    if target.AI == False:
+                        print(f"Sailor {sailor.name} becomes mortal")
+                    elif werewolf.AI == False:
+                        print(f"Werewolf {werewolf.name} attacks {target.name}, but they survived!")
                     current_prompt = self.ai_agents[sailor.name][0]["content"]
                     string = "night " + str(self.night) + " I was attacked and lost my protection"
                     # Append the new critical information to the prompt
@@ -218,18 +231,22 @@ class WerewolfGame:
                     sailor.true_role = "Mortal"
                     sailor = None
                 else:
-                    dead.append(target)
-                    print(f"Werewolf {werewolf.name} attacks {target.name}.")
+                    dead.append(target.name)
                     target.alive = False
+                    if target.AI ==  False:
+                        print(f"Werewolf {werewolf.name} attacks {target.name}.")
                     if target.role == "Fighter": 
                         time.sleep(self.speed+3)
                         target_name = self.get_ai_decision(fighter, "you have died, choose a player to kill", [p.name for p in self.players if p.alive])
                         target = next(p for p in self.players if p.name == target_name)
                         if target == protected_player:
-                            print(f"Fighter {fighter.name} attacks {target.name}, but they are protected!")
+                            if target.AI == False:
+                                time.sleep(1)
+                            # print(f"Sailor {sailor.name} becomes mortal")
                         else:
                             if target == sailor:
-                                print(f"Sailor {sailor.name} becomes mortal")
+                                if target.AI == False:
+                                    print(f"Sailor {sailor.name} becomes mortal")
                                 current_prompt = self.ai_agents[sailor.name][0]["content"]
                                 string = "night " + str(self.night) + " I was attacked and lost my protection"
                                 # Append the new critical information to the prompt
@@ -240,11 +257,14 @@ class WerewolfGame:
                                 sailor.true_role = "Mortal"
                                 sailor = None
                             else:
-                                print(f"Fighter {fighter.name} attacks {target.name}.")
+                                if fighter.AI == False:
+                                    print(f"You died in a blaze of glory, game over")
+                                elif target.AI == False:
+                                    print(f"Fighter {fighter.name} has killed you, game over")
                                 target.alive = False
-                                dead.append(target)
-                                if target == werewolf:
-                                    self.check_winner()
+                                dead.append(target.name)
+                    self.check_winner()
+                                    
             time.sleep(self.speed+3)
 
         psycho = next((p for p in self.players if p.role == "Psycho" and p.alive), None)
@@ -261,13 +281,14 @@ class WerewolfGame:
             self.ai_agents[psycho.name][0]["content"] = updated_prompt
             self.ai_agents[psycho.name].append({"role": "assistant", "content": string})
             if target == protected_player or target == werewolf:
-                if target == werewolf:
-                    print(f"Psycho {psycho.name} attacks {target.name}, but they are the werewolf!")
-                else:
+                if psycho.AI ==  False:
                     print(f"Psycho {psycho.name} attacks {target.name}, but they are protected!")
             else:
                 if target == sailor:
-                    print(f"Sailor {sailor.name} becomes mortal")
+                    if target.AI == False:
+                        print(f"Sailor {sailor.name} becomes mortal")
+                    if psycho.AI == False:
+                        print(f"Psycho {psycho.name} attacks {target.name}, but they are protected!")
                     current_prompt = self.ai_agents[sailor.name][0]["content"]
                     string = "night " + str(self.night) + " I was attacked and lost my protection"
                         # Append the new critical information to the prompt
@@ -278,8 +299,8 @@ class WerewolfGame:
                     sailor.true_role = "Mortal"
                     sailor = None
                 else:
-                    dead.append(target)
-                    print(f"Psycho {psycho.name} attacks {target.name}.")
+                    dead.append(target.name)
+                    # print(f"Psycho {psycho.name} attacks {target.name}.")
                     target.alive = False
             time.sleep(self.speed+3)
 
@@ -298,7 +319,8 @@ class WerewolfGame:
                 # Update the first message with the new prompt
             self.ai_agents[seer.name][0]["content"] = updated_prompt
             self.ai_agents[seer.name].append({"role": "assistant", "content": string})
-            print(f"Seer {seer.name} investigates {suspect.name} and learns they are: {result}.")
+            if seer.AI == False:
+                print(f"Seer {seer.name} investigates {suspect.name} and learns they are: {result}.")
             time.sleep(self.speed+3)
 
         if drunk:
@@ -313,7 +335,8 @@ class WerewolfGame:
                 # Update the first message with the new prompt
             self.ai_agents[drunk.name][0]["content"] = updated_prompt
             self.ai_agents[drunk.name].append({"role": "assistant", "content": string})
-            print(f"Drunk {drunk.name} investigates {suspect.name} and learns they are: {result}.")
+            if drunk.AI == False:
+                print(f"Seer {drunk.name} investigates {suspect.name} and learns they are: {result}.")
             time.sleep(self.speed+3)
 
         steward = next((p for p in self.players if p.role == "Steward" and p.alive), None)
@@ -330,7 +353,8 @@ class WerewolfGame:
                 # Update the first message with the new prompt
                 self.ai_agents[steward.name][0]["content"] = updated_prompt
                 self.ai_agents[steward.name].append({"primary role": "player", "content": string})
-                print(f"Steward {steward.name} learns {not_WW} is not a werewolf")
+                if steward.AI == False:
+                    print(f"Steward {steward.name} learns {not_WW} is not a werewolf")
         
         if medium and len(dead) > 0:
             seen = dead[0]
@@ -341,7 +365,8 @@ class WerewolfGame:
                 # Update the first message with the new prompt
             self.ai_agents[medium.name][0]["content"] = updated_prompt
             self.ai_agents[medium.name].append({"primary role": "player", "content": string})
-            print(f"Medium {medium.name} learns {seen.name} is a {seen.true_role}")
+            if medium.AI == False:
+                print(f"Medium {medium.name} learns {seen.name} is a {seen.true_role}")
         
         message = str(random.shuffle(dead))
         if len(dead) == 0:
@@ -352,7 +377,11 @@ class WerewolfGame:
                 message += "s died"
             else:
                 message += "ve died"
+        print(message)
 
+        alive_players = [p.name for p in self.players if p.alive]
+        print(str(alive_players))
+        
         for player in alive_players:
             self.ai_agents[player].append({"role": "user", "content": message})
 
@@ -379,7 +408,8 @@ class WerewolfGame:
                 p.bluff = bluff_role
                 bluff_strategy = "I might claim to be buffing" + BLUFF_GUIDE.get(bluff_role, "Nothing. I plan to just tell the truth") + "but that doesnt mean I am locked on this decision"
                 self.ai_agents[p.name].append({"role": "assistant", "content": bluff_strategy})
-                print(p.name + " is bluffing as: " + bluff_role)
+                if p.ai == False:
+                    print(bluff_strategy)
             time.sleep(self.speed+1)
 
     def converstaions(self, convos):
@@ -410,26 +440,29 @@ class WerewolfGame:
                         i += 2
                     else: 
                         alive_players[i], alive_players[i+2+attempts] = alive_players[i+2+attempts], alive_players[i]
-                        print("attempt #" + attempts)
+                        # print("attempt #" + attempts)
                         
                     
             
             # Run each private conversation
             for convo in conversations:
                 participant = [p for p in convo]
+                human = any(p.alive and p.AI == False for p in convo)
                 message = f"you are in a private conversation with {', '.join(p.name for p in participant)}. "
                 string = f"""
                 ----------------------------------------------------------------
 
                 {message}
                 ----------------------------------------------------------------"""
-                print(string) 
+                if human:
+                    print(string) 
                 for p in participant:
                     self.ai_agents[p.name].append({"role": "user", "content": message})
 
                 for turn in range(1+len(convo)):    # Each player speaks twice
                     prompt = f"""
             you are {p.name} and you are a {p.role} bluffing as {p.bluff} in a private conversation with {', '.join(o.name for o in participant if o.name != p.name)}
+            anything in your message history with your name is something you have said. Try to be consistent with past claims.
             You do not have to commit to the role you are bluffing as
             Do not say you are the same role as another player unless you are that player or you are the Werewolf
             you are now in a private conversation. Feel free to share any information you have. 
@@ -457,17 +490,22 @@ class WerewolfGame:
                     if speaker.role == "Werewolf":
                         prompt += "You cannot claim to be Villager, you must bluff as another role. Give a convincing impression of that role, giving out false information when you can"
                     player_history = self.ai_agents[speaker.name]
-                    response = self.callAI(player_history, prompt)
-                        # check if response is formatted
-                    scan = "AI "+speaker.name 
-                    if (not response.startswith(scan)):
-                            #format if not formatted
-                        response = "AI " + speaker.name + " says: " + response
 
-                    print(response)
+                    if speaker.AI == True:
+                        response = self.callAI(player_history, prompt)
+                            # check if response is formatted
+                        scan = "AI "+speaker.name 
+                        if (not response.startswith(scan)):
+                                #format if not formatted
+                            response = "AI " + speaker.name + " says: " + response
+                    else:
+                        response = input(prompt)
+                        response = "Human " + speaker.name + " says " + response
                         # Append to all players' history in the conversation
                     for p in convo:
                         self.ai_agents[p.name].append({"role": "assistant" if p.name == speaker.name else "user", "content": response})
+                        if p.AI == False and speaker.AI == True:
+                            print(response)
                     time.sleep(self.speed+5)
             if self.mode < 1:
                 self.reflection()
@@ -554,18 +592,20 @@ class WerewolfGame:
 
                 Please keep your responses to 1-2 short sentences.  
                 """
-                
+                if player.AI == True:
                 # Send prompt
-                choice = self.callAI(messages, prompt)
+                    choice = self.callAI(messages, prompt)
                 
                 # check if response is formatted
-                scan = "AI "+player.name 
+                    scan = "AI "+player.name 
 
-                if (not choice.startswith(scan)):
+                    if (not choice.startswith(scan)):
                     #format if 
-                    choice = "AI " + player.name + " says: " + choice
-
-                print(choice)
+                        choice = "AI " + player.name + " says: " + choice
+                    print(choice)
+                else:
+                    print(prompt)
+                    choice = input("what do you want to say?")
                 time.sleep(self.speed+5)
 
                 for p in alive_players:
@@ -597,29 +637,35 @@ class WerewolfGame:
             if player.role == "Jester":
                 prompt += ". Remember that you want to get executed."
                
-
+            if player.AI == True:
             # Send prompt
-            choice = self.callAI(messages, prompt)
+                choice = self.callAI(messages, prompt)
 
-            # clearn response
-            choice = choice[7:-3]
+                # clearn response
+                choice = choice[7:-3]
 
-            current_prompt = self.ai_agents[player.name][1]["content"]
-            string = "day " + str(self.night) + " I have voted for vote for: " + choice
-            # Append the new critical information to the prompt
-            updated_prompt = current_prompt + "\n" + string
-                # Update the first message with the new prompt
-            self.ai_agents[player.name][1]["content"] = updated_prompt
-            messages.append({"role": "assistant", "content": string})
+                current_prompt = self.ai_agents[player.name][1]["content"]
+                string = "day " + str(self.night) + " I have voted for vote for: " + choice
+                # Append the new critical information to the prompt
+                updated_prompt = current_prompt + "\n" + string
+                    # Update the first message with the new prompt
+                self.ai_agents[player.name][1]["content"] = updated_prompt
+                messages.append({"role": "assistant", "content": string})
+                try: 
+                    vote_data = json.loads(choice)
+                    player.votes = vote_data.get("votes", [])
+                except json.JSONDecodeError:
+                    player.votes = []
+            else:
             # print response
-            print(player.name + " says " + string)
+                print(prompt)
+                user_input = input("Enter a list of items (comma-separated): ")
+
+                # Split the input string into a list using the comma as a delimiter
+                player.votes = [item.strip() for item in user_input.split(",")]
             time.sleep(self.speed+7)
 
-            try: 
-                vote_data = json.loads(choice)
-                player.votes = vote_data.get("votes", [])
-            except json.JSONDecodeError:
-                player.votes = []
+            
 
     def nomination_phase(self):
         print("\n--- Nomination Phase ---")
@@ -655,7 +701,6 @@ class WerewolfGame:
             voter = next(p for p in self.players if p.name == voter_name)
             if nominee_name in voter.votes:
                 votes.append(voter_name)
-        
         print(f"Votes for {nominee_name}: {', '.join(votes)}")
         if len(votes) > len(alive_players) / 2:
             print(f"{nominee_name} has been executed!")
@@ -678,6 +723,7 @@ class WerewolfGame:
     def check_winner(self):
         werewolf_alive = any(p.alive and p.role == "Werewolf" for p in self.players)
         villagers_alive = sum(1 for p in self.players if p.alive and p.role != "Werewolf")
+        playerdead = next((p for p in self.players if p.AI == False and not p.alive), None)
 
         if not werewolf_alive:
             print("\nVillagers win!")
@@ -685,6 +731,9 @@ class WerewolfGame:
         elif villagers_alive < 2:
             print("\nWerewolf wins!")
             self.game_over = True
+        if playerdead:
+            print("\nYou died, so sad! the game is over for you, but you can still spectate public converstaions")
+            playerdead.AI = True
 
     def callAI(self, messages, prompt):
         while True:
@@ -712,16 +761,19 @@ class WerewolfGame:
             time.sleep(1)
             self.converstaions(self.convos)
             time.sleep(1)
-            self.discussion(self.convos-1)
+            self.discussion(self.convos)
             time.sleep(1)
             self.get_noms()
             time.sleep(1)
             self.nomination_phase()
             self.check_winner()
-            time.sleep(1) 
+            time.sleep(1)
+        print("\n--- Players and Roles ---")
+        for player in self.players:
+            print(player.name + " was the " + player.true_role)
 
 if __name__ == "__main__":
-    debug_mode = "debug" in sys.argv
+    debug_mode = "debug" not in sys.argv
     # works with 5 through 10, simply modify playercount
     game = WerewolfGame(debug_mode)
     game.play()
