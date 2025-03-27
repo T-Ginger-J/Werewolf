@@ -6,7 +6,7 @@ import sys
 import google.generativeai as genai
 import google.api_core.exceptions
 
-genai.configure(api_key="AIzaSyBeDj1A3RF6W5qT8R8LbtBRi_9qlOXl9RM")
+genai.configure(api_key="Your Gemini Key")
 
 BLUFF_GUIDE = {
         "Seer": "Seers will claim to have investigated a player and will get either Werewolf or not a Werewolf. Remember that you could be drunk, which means there can be up to 2 good people that think they are seer.",
@@ -471,7 +471,7 @@ class WerewolfGame:
             Some roles might want to lie about what role they are, like Werewolf. 
             You can relay false information if you think it will help.
             No ability will ever fail, 
-            Keep your conversation brief, 2-3 sentences.
+            
             Do not introduce yourself. Assume they already know your name. DO NOT SAY YOUR NAME.
             Do not assume that you should follow the same format as the message you've seen. 
 
@@ -484,7 +484,9 @@ class WerewolfGame:
 
 
             Stick to one bluff at a time. Do not say you are a role that you are not and are not bluffing unless you are the Werewolf or Fool
-             
+
+            Keep your conversation brief, 2-3 sentences.
+
             """
                     speaker = convo[turn % len(convo)]
                     if speaker.role == "Werewolf":
@@ -664,8 +666,6 @@ class WerewolfGame:
                 # Split the input string into a list using the comma as a delimiter
                 player.votes = [item.strip() for item in user_input.split(",")]
             time.sleep(self.speed+7)
-
-            
 
     def nomination_phase(self):
         print("\n--- Nomination Phase ---")
