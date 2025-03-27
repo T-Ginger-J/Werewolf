@@ -181,6 +181,8 @@ class WerewolfGame:
 
         dead = []
 
+        alive_players = [p.name for p in self.players if p.alive]
+
         protected_player = None
         if monk:
             alive_players = [p.name for p in self.players if p.alive and p != monk]
@@ -287,7 +289,6 @@ class WerewolfGame:
         drunk = next((p for p in self.players if p.true_role == "Drunk" and p.alive), None)
 
         if seer:
-            alive_players = [p.name for p in self.players if p.alive and p != seer]
             suspect_name = self.get_ai_decision(seer, "choose a player to investigate", alive_players)
             suspect = next(p for p in self.players if p.name == suspect_name)
             result = "Werewolf" if suspect.role == "Werewolf" else "Not a Werewolf"
@@ -302,7 +303,6 @@ class WerewolfGame:
             time.sleep(self.speed+3)
 
         if drunk:
-            alive_players = [p.name for p in self.players if p.alive and p != drunk]
             suspect_name = self.get_ai_decision(drunk, "choose a player to investigate", alive_players)
             suspect = next(p for p in self.players if p.name == suspect_name)
             result = "Werewolf" if not suspect.role == "Werewolf" else "Not a Werewolf"
@@ -332,16 +332,19 @@ class WerewolfGame:
                 self.ai_agents[steward.name].append({"primary role": "player", "content": string})
                 print(f"Steward {steward.name} learns {not_WW} is not a werewolf")
         
-        if medium and len(dead) > 0:
-            seen = dead[0]
+        if medium:
+            string = "night "+ str(self.night) + "no one died"
             current_prompt = self.ai_agents[medium.name][0]["content"]
-            string = "night " + str(self.night) + " I learned " + seen.name + " was the " + seen.true_role + ". This means no other players can be that role."
-            # Append the new critical information to the prompt
+            if len(dead) > 0:
+                seen = dead[0]
+                string = "night " + str(self.night) + " I learned " + seen.name + " was the " + seen.true_role + ". This means no other players can be that role."
+                # Append the new critical information to the prompt
+                print(f"Medium {medium.name} learns {seen.name} is a {seen.true_role}")
             updated_prompt = current_prompt + "\n" + string
                 # Update the first message with the new prompt
             self.ai_agents[medium.name][0]["content"] = updated_prompt
             self.ai_agents[medium.name].append({"primary role": "player", "content": string})
-            print(f"Medium {medium.name} learns {seen.name} is a {seen.true_role}")
+            
         
         message = str(random.shuffle(dead))
         if len(dead) == 0:
