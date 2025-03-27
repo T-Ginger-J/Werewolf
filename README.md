@@ -2,15 +2,17 @@
 Classic werewolf game played by AI
 
 # Setting up: 
-Clone github or download zip and unzip code  
-Download & install Ollama:  
-    https://ollama.com/  
-Pull the mistral model using:  
-    ollama pull mistral  
+Clone github or download zip and unzip code 
+    open this folder in terminal  
+configure LLM:  
+    Go to [google AI](aistudio.google.com/)  
+    Use a non school gmail account (same one as google cloud)  
+    Generate API key (free for limited tokens)  
+    paste it into line 10  
 run the following command:  
-    pip install ollama  
+    pip install google-generativeai 
 then you can start the game with:  
-    python gameloop.py  
+    python gameloop.py 
 
 Game is currently set to accommodate 5-7 players  
 Change the player count by altering line 270  
