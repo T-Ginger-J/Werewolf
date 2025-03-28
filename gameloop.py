@@ -359,7 +359,7 @@ class WerewolfGame:
         
         if medium:
             if len(dead) > 0:
-                seen = dead[0]
+                seen = next((p for p in self.players if p.name == dead[0]), None)
                 current_prompt = self.ai_agents[medium.name][0]["content"]
                 string = "night " + str(self.night) + " I learned " + seen.name + " was the " + seen.true_role + ". This means no other players can be that role."
             # Append the new critical information to the prompt
