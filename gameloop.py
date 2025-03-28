@@ -2,6 +2,7 @@ import random
 import time
 import json
 import sys
+import threading
 
 import google.generativeai as genai
 import google.api_core.exceptions
@@ -111,32 +112,32 @@ class WerewolfGame:
     
     def introduce_ai_player(self, player):
         prompt = f"""
-        You are {player.name}, playing a Werewolf game. Your role is {player.role}.
-        There is one human playing, they might talk differently but that doesnt make them more or less suspicious
-        Here are the evil roles. They have their own win conditions.
-        - The Werewolf eliminates one player per night. Wins if they kill everyone
-        - The Jester wants to be voted out by the town. They win if do, everyone else loses.
+You are {player.name}, playing a Werewolf game. Your role is {player.role}.
+There is one human playing, they might talk differently but that doesnt make them more or less suspicious
+Here are the evil roles. They have their own win conditions.
+- The Werewolf eliminates one player per night. Wins if they kill everyone
+- The Jester wants to be voted out by the town. They win if do, everyone else loses.
 
-        Here are all the good roles: they all win by executing the Werewolf
-        - The Seer checks players, but might be Drunk. They either learn werewolf or not werewolf
-        - The Drunk has been told they are Seer, but always get opposite results.
-        - The Steward starts the game knowing one player is not the werewolf. They learn nothing else but can trust that player.
-        - The Medium learns the role of the first character that dies each night.
-        - The Monk protects one player from death per night.  
-        - The Fighter wants the Werewolf to kill them. They can kill a player if they are killed.
-        - The Sailor survives death once. They learn if they were attacked at night.
-        - The Saint must avoid being voted out by the town. Werewolf wins if they are.
-        - The Psycho kills every night. The werewolf and protected players are immune. 
-        - Villager is not the werewolf, probably
-        
-        
-        Any of the roles besides Werewolf could not be in play. 
+Here are all the good roles: they all win by executing the Werewolf
+- The Seer checks players, but might be Drunk. They either learn werewolf or not werewolf
+- The Drunk has been told they are Seer, but always get opposite results.
+- The Steward starts the game knowing one player is not the werewolf. They learn nothing else but can trust that player.
+- The Medium learns the role of the first character that dies each night.
+- The Monk protects one player from death per night.  
+- The Fighter wants the Werewolf to kill them. They can kill a player if they are killed.
+- The Sailor survives death once. They learn if they were attacked at night.
+- The Saint must avoid being voted out by the town. Werewolf wins if they are.
+- The Psycho kills every night. The werewolf and protected players are immune. 
+- Villager is not the werewolf, probably
 
-        ALWAYS REFERENCE THESE ROLES WHEN BLUFFING AS CHARACTER
-        
-        Consistency is really important. Try to always stick to one story.
-        You are sleuths trying to solve the murders. You should be trying to find out what role everyone is, and kill the ones who are most a threat.
-        """
+
+Any of the roles besides Werewolf could not be in play. 
+
+ALWAYS REFERENCE THESE ROLES WHEN BLUFFING AS CHARACTER
+
+Consistency is really important. Try to always stick to one story.
+You are sleuths trying to solve the murders. You should be trying to find out what role everyone is, and kill the ones who are most a threat.
+"""
         if player.role == "Werewolf":
             prompt += "/n " + player.bluff + " is the Werewolf's bluff. It is not in play and is safe to bluff as over the course of the game. Only you know this information so take advantage of it."
         
@@ -151,15 +152,15 @@ class WerewolfGame:
         # Give AI the current circumstances and ask for direction
 
         prompt = f"""
-        it is night {str(self.night)}
-        You are {player.name}, playing as {player.role} in a game of Werewolf.
-        These are your options {', '.join(options)}
-        
-        Your task is to make a decision: {decision_type}.
-        Respond with ONLY one item from the list. No explanations.
-    
-        Answer format: [Exact option from the list]
-        """
+it is night {str(self.night)}
+You are {player.name}, playing as {player.role} in a game of Werewolf.
+These are your options {', '.join(options)}
+
+Your task is to make a decision: {decision_type}.
+Respond with ONLY one item from the list. No explanations.
+
+Answer format: [Exact option from the list]
+"""
         choice = ""
 
         messages = self.ai_agents[player.name]  # Get player's chat history
@@ -370,7 +371,8 @@ class WerewolfGame:
                 if medium.AI == False:
                     print(f"Medium {medium.name} learns {seen.name} is a {seen.true_role}")
         
-        message = str(random.shuffle(dead))
+        random.shuffle(dead)
+        message = str(dead)
         if len(dead) == 0:
             message = "Nobody died last night"
         else:
@@ -444,77 +446,138 @@ class WerewolfGame:
                         alive_players[i], alive_players[i+2+attempts] = alive_players[i+2+attempts], alive_players[i]
                         # print("attempt #" + attempts)
                         
-                    
+            threads = []
             
             # Run each private conversation
             for convo in conversations:
                 participant = [p for p in convo]
                 human = any(p.alive and p.AI == False for p in convo)
-                message = f"you are in a private conversation with {', '.join(p.name for p in participant)}. "
-                string = f"""
-                ----------------------------------------------------------------
-
-                {message}
-                ----------------------------------------------------------------"""
                 if human:
-                    print(string) 
-                for p in participant:
-                    self.ai_agents[p.name].append({"role": "user", "content": message})
+                    message = f"you are in a private conversation with {', '.join(p.name for p in participant)}. "
+                    string = f"""
+                    ----------------------------------------------------------------
 
-                for turn in range(1+len(convo)):    # Each player speaks twice
-                    prompt = f"""
-            you are {p.name} and you are a {p.role} bluffing as {p.bluff} in a private conversation with {', '.join(o.name for o in participant if o.name != p.name)}
-            anything in your message history with your name is something you have said. Try to be consistent with past claims.
-            You do not have to commit to the role you are bluffing as
-            Do not say you are the same role as another player unless you are that player or you are the Werewolf
-            you are now in a private conversation. Feel free to share any information you have. 
-            Make sure you respond to the messages already in this conversation. DO NOT REPEAT ANY MESSAGES YOU HAVE SEEN.
-            You should claim to be a role (Villager, Seer, Monk, Fighter, Steward, Medium, Saint, Sailor, Psycho, Jester)
-            Some roles might want to lie about what role they are, like Werewolf. 
-            You can relay false information if you think it will help.
-            No ability will ever fail, 
-            
-            Do not introduce yourself. Assume they already know your name. DO NOT SAY YOUR NAME.
-            Do not assume that you should follow the same format as the message you've seen. 
+                    {message}
+                    ----------------------------------------------------------------"""
+                    if human:
+                        print(string) 
+                    for p in participant:
+                        self.ai_agents[p.name].append({"role": "user", "content": message})
 
-            You should be concered if 2 players are claiming the same role. One of them is lying. 
-            Therefore do not claim a role that someone else is claiming unless you have reason to believe they are not that role.
+                    for turn in range(1+len(convo)):    # Each player speaks twice
+                        prompt = f"""
+you are {p.name} and you are a {p.role} bluffing as {p.bluff} in a private conversation with {', '.join(o.name for o in participant if o.name != p.name)}
+anything in your message history with your name is something you have said. Try to be consistent with past claims.
+You do not have to commit to the role you are bluffing as
+Do not say you are the same role as another player unless you are that player or you are the Werewolf
+you are now in a private conversation. Feel free to share any information you have. 
+Make sure you respond to the messages already in this conversation. DO NOT REPEAT ANY MESSAGES YOU HAVE SEEN.
+You should claim to be a role (Villager, Seer, Monk, Fighter, Steward, Medium, Saint, Sailor, Psycho, Jester)
+Some roles might want to lie about what role they are, like Werewolf. 
+You can relay false information if you think it will help.
+No ability will ever fail, 
 
-            Always look at the prior convesations. to see if you have already claimed a role to the people you are in a conversation with. 
-            Do not gossip about players that you havent talked to or heard about. If a player does not exist in your history you know nothing about them. 
-            Do not gossip about player roles that no one has claimed. if no one including yourself is claimging to be that role in your history you know nothing about it.
+Do not introduce yourself. Assume they already know your name. DO NOT SAY YOUR NAME.
+Do not assume that you should follow the same format as the message you've seen. 
+
+You should be concered if 2 players are claiming the same role. One of them is lying. 
+Therefore do not claim a role that someone else is claiming unless you have reason to believe they are not that role.
+
+Always look at the prior convesations. to see if you have already claimed a role to the people you are in a conversation with. 
+Do not gossip about players that you havent talked to or heard about. If a player does not exist in your history you know nothing about them. 
+Do not gossip about player roles that no one has claimed. if no one including yourself is claimging to be that role in your history you know nothing about it.
 
 
-            Stick to one bluff at a time. Do not say you are a role that you are not and are not bluffing unless you are the Werewolf or Fool
+Stick to one bluff at a time. Do not say you are a role that you are not and are not bluffing unless you are the Werewolf or Fool
 
-            Keep your conversation brief, 2-3 sentences.
+Keep your conversation brief, 2-3 sentences.
+"""
+                        speaker = convo[turn % len(convo)]
+                        if speaker.role == "Werewolf":
+                            prompt += "You cannot claim to be Villager, you must bluff as another role. Give a convincing impression of that role, giving out false information when you can"
+                        player_history = self.ai_agents[speaker.name]
 
-            """
-                    speaker = convo[turn % len(convo)]
-                    if speaker.role == "Werewolf":
-                        prompt += "You cannot claim to be Villager, you must bluff as another role. Give a convincing impression of that role, giving out false information when you can"
-                    player_history = self.ai_agents[speaker.name]
+                        if speaker.AI:
+                            response = self.callAI(player_history, prompt)
+                                # check if response is formatted
+                            scan = "AI "+speaker.name 
+                            if (not response.startswith(scan)):
+                                    #format if not formatted
+                                response = "AI " + speaker.name + " says: " + response
+                        else:
+                            print(prompt)
+                            response = input("what do you want to say?")
+                            response = "Human " + speaker.name + " says " + response
+                            # Append to all players' history in the conversation
+                        for p in convo:
+                            self.ai_agents[p.name].append({"role": "assistant" if p.name == speaker.name else "user", "content": response})
+                            if p.AI == False and speaker.AI == True:
+                                print(response)
+                        time.sleep(self.speed+5)
+                else:
+                    # Start AI-only conversations in a separate thread
+                    thread = threading.Thread(target=self.ai_conversation, args=(convo,))
+                    thread.start()
+                    threads.append(thread)
+                
+            for thread in threads:
+                thread.join()
 
-                    if speaker.AI == True:
-                        response = self.callAI(player_history, prompt)
-                            # check if response is formatted
-                        scan = "AI "+speaker.name 
-                        if (not response.startswith(scan)):
-                                #format if not formatted
-                            response = "AI " + speaker.name + " says: " + response
-                    else:
-                        response = input(prompt)
-                        response = "Human " + speaker.name + " says " + response
-                        # Append to all players' history in the conversation
-                    for p in convo:
-                        self.ai_agents[p.name].append({"role": "assistant" if p.name == speaker.name else "user", "content": response})
-                        if p.AI == False and speaker.AI == True:
-                            print(response)
-                    time.sleep(self.speed+5)
             if self.mode < 1:
                 self.reflection()
                 self.bluffing()
-                time.sleep(1)    
+                time.sleep(1)  
+
+    def ai_conversation(self, convo):
+    
+        participant = [p for p in convo]
+        message = f"you are in a private conversation with {', '.join(p.name for p in participant)}. "
+
+        for p in participant:
+            self.ai_agents[p.name].append({"role": "user", "content": message})
+
+        for turn in range(1 + len(convo)):  # Each player speaks twice
+            speaker = convo[turn % len(convo)]
+            if speaker.AI:  # AI only
+                prompt = f"""
+you are {p.name} and you are a {p.role} bluffing as {p.bluff} in a private conversation with {', '.join(o.name for o in participant if o.name != p.name)}
+anything in your message history with your name is something you have said. Try to be consistent with past claims.
+You do not have to commit to the role you are bluffing as
+Do not say you are the same role as another player unless you are that player or you are the Werewolf
+you are now in a private conversation. Feel free to share any information you have. 
+Make sure you respond to the messages already in this conversation. DO NOT REPEAT ANY MESSAGES YOU HAVE SEEN.
+You should claim to be a role (Villager, Seer, Monk, Fighter, Steward, Medium, Saint, Sailor, Psycho, Jester)
+Some roles might want to lie about what role they are, like Werewolf. 
+You can relay false information if you think it will help.
+No ability will ever fail, 
+
+Do not introduce yourself. Assume they already know your name. DO NOT SAY YOUR NAME.
+Do not assume that you should follow the same format as the message you've seen. 
+
+You should be concered if 2 players are claiming the same role. One of them is lying. 
+Therefore do not claim a role that someone else is claiming unless you have reason to believe they are not that role.
+
+Always look at the prior convesations. to see if you have already claimed a role to the people you are in a conversation with. 
+Do not gossip about players that you havent talked to or heard about. If a player does not exist in your history you know nothing about them. 
+Do not gossip about player roles that no one has claimed. if no one including yourself is claimging to be that role in your history you know nothing about it.
+
+
+Stick to one bluff at a time. Do not say you are a role that you are not and are not bluffing unless you are the Werewolf or Fool
+
+Keep your conversation brief, 2-3 sentences.
+"""
+                player_history = self.ai_agents[speaker.name]
+                response = self.callAI(player_history, prompt)
+
+                # Ensure proper formatting
+                if not response.startswith(f"AI {speaker.name}"):
+                    response = f"AI {speaker.name} says: {response}"
+
+                # Append the response to all players in convo
+                for p in convo:
+                    self.ai_agents[p.name].append({"role": "assistant" if p == speaker else "user", "content": response})
+
+                time.sleep(self.speed + 2)
                     
     def reflection(self, length):
         print("\n--- Self Reflection Phase ---")
@@ -525,27 +588,27 @@ class WerewolfGame:
             messages = self.ai_agents[player.name]
             prompt = "It is day " + str(self.night) + ". you are a " + player.role + ". "
             prompt += f"""
-            The following players are still alive: {', '.join(p.name for p in alive_players)}
-            This is your chance to record everything you know about the game privately, Think of this as an internal monologue.
-            Every player has a unique role. Have you learned what roles players are claiming?
-            What role have you been claiming? If this isn't your real role what information have you been giving out?
-            What is your route to victory? Who do you need to execute to get there?  
-            Who do you think should not be executed? is it because they are good? or Because you suspect them of being a Jester?
-            Do you think there is a drunk in play?
+The following players are still alive: {', '.join(p.name for p in alive_players)}
+This is your chance to record everything you know about the game privately, Think of this as an internal monologue.
+Every player has a unique role. Have you learned what roles players are claiming?
+What role have you been claiming? If this isn't your real role what information have you been giving out?
+What is your route to victory? Who do you need to execute to get there?  
+Who do you think should not be executed? is it because they are good? or Because you suspect them of being a Jester?
+Do you think there is a drunk in play?
 
-            Keep your responses brief, summarize the most important points that you want to remember. Maxium number of sentences is {self.speed + 2}
-            Its ok to not answer every question. 
-            Focus on remembering what you have claimed and what you want to claim in the future
-            Also on suspicions: who is the drunk, who is the jester who is the werewolf?
-            """
+Keep your responses brief, summarize the most important points that you want to remember. Maxium number of sentences is {self.speed + 2}
+Its ok to not answer every question. 
+Focus on remembering what you have claimed and what you want to claim in the future
+Also on suspicions: who is the drunk, who is the jester who is the werewolf?
+"""
             
             if player.role == "Werewolf":
                 prompt += f"""
-            Who do you think would be a good kill? Are you planning on claiming the same role tomorrow or switching up your role?
-            Does the information you are giving out make sense given the role descripitions you've been given?
-            """
+Who do you think would be a good kill? Are you planning on claiming the same role tomorrow or switching up your role?
+Does the information you are giving out make sense given the role descripitions you've been given?
+"""
             model = genai.GenerativeModel("gemini-1.5-flash")
-            response = model.generate_content("here is the chat history: " + str(temp_history) + "now respond to this prompt: " + prompt)
+            response = model.generate_content("here is the chat history: " + str(messages) + "now respond to this prompt: " + prompt)
             response = response.text.strip()
             print("On, day" + str(self.night) + ", " + player.name + " thinks that: " + response)
             
@@ -568,7 +631,7 @@ class WerewolfGame:
                 messages = self.ai_agents[player.name] # get chat history
                 prompt = "It is day " + str(self.night) + ". you are a " + player.role + " bluffing " + player.bluff
                 if player.role == "Werewolf":
-                    prompt += ". You must not tell anyone this, instead you should falsely claim to be a role that you think will not be executed. You CANNOT pretend to be a villager."
+                    prompt += ". You must not tell anyone you are werewolf. instead you should falsely claim to be a role that you think will not be executed. You CANNOT pretend to be a villager."
                 if player.role == "Seer":
                     prompt += ". Remember that you might not actually be an seer, there is a chance you are the Drunk. If you found a Werewolf you should push for their execution."
                 if player.role == "Jester":
@@ -578,24 +641,24 @@ class WerewolfGame:
                 if player.role == "Fighter" or player.role == "Sailor" :
                     prompt += ". Remember you want to get attacked by the Werewolf. The Werewolf might not attack you if you are truthful about your role." 
                 prompt += f"""
-                The following players are still alive: {', '.join(p.name for p in alive_players)}
-                What would you like to tell the other players? 
-                You should claim to be a role (Villager, Seer, Monk, Fighter, Steward, Medium, Saint, Sailor, Pyscho, Jester)
-                You can bluff about what role you are. Try to be consistent with your past role claims, or give justification for why you are chainging your claim. 
-                You should not bluff unless you have to.
-                If you learned something last night, you should tell the other players 
-                You can relay false information and should do so if you are bluffing about what role you are. You should not do this often. unless you are bluffing a character
+The following players are still alive: {', '.join(p.name for p in alive_players)}
+What would you like to tell the other players? 
+You should claim to be a role (Villager, Seer, Monk, Fighter, Steward, Medium, Saint, Sailor, Pyscho, Jester)
+You can bluff about what role you are. Try to be consistent with your past role claims, or give justification for why you are chainging your claim. 
+You should not bluff unless you have to.
+If you learned something last night, you should tell the other players 
+You can relay false information and should do so if you are bluffing about what role you are. You should not do this often. unless you are bluffing a character
 
-                Remember there can only be one of each role. You should question anybody claiming the same role as yourself or someone else.
+Remember there can only be one of each role. You should question anybody claiming the same role as yourself or someone else.
 
-                There is a jester and werewolf lying about their role. Avoid executing the jester.
+There is a jester and werewolf lying about their role. Avoid executing the jester.
 
-                There also could be a drunk who thinks they are seer. 
-                
-                Suggest a player for execution if you suspect someone. 
+There also could be a drunk who thinks they are seer. 
 
-                Please keep your responses to 1-2 short sentences.  
-                """
+Suggest a player for execution if you suspect someone. 
+
+Please keep your responses to 1-2 short sentences.  
+"""
                 if player.AI == True:
                 # Send prompt
                     choice = self.callAI(messages, prompt)
@@ -623,20 +686,20 @@ class WerewolfGame:
             messages = self.ai_agents[player.name] # get chat history
 
             prompt = f"""
-            you are {player.name}, a {player.role}
-            The following players are still alive: {', '.join(p.name for p in alive_players)}
-            Remember to look at the role that you are and that you believe other players are. 
-            Based on the current game state, return a JSON object with a list of players you would nominate.
-            Do not add any explinations, just say which players you think are potentially the werewolf.
-            You should name at least one player. You can name as many as you like.
-            The more players you name the more likely an execution is to occur.
-            The first name should be the player you most want to execute (if any).
-            Only respond with the JSON object and no other words.
-            You must follow this Example format: 
-            {{
-                "votes": ["Player1", "Player2", "Player3"]
-            }}
-            """
+you are {player.name}, a {player.role}
+The following players are still alive: {', '.join(p.name for p in alive_players)}
+Remember to look at the role that you are and that you believe other players are. 
+Based on the current game state, return a JSON object with a list of players you would nominate.
+Do not add any explinations, just say which players you think are potentially the werewolf.
+You should name at least one player. You can name as many as you like.
+The more players you name the more likely an execution is to occur.
+The first name should be the player you most want to execute (if any).
+Only respond with the JSON object and no other words.
+You must follow this Example format: 
+{{
+    "votes": ["Player1", "Player2", "Player3"]
+}}
+"""
 
             if player.role == "Jester":
                 prompt += ". Remember that you want to get executed."
@@ -667,7 +730,7 @@ class WerewolfGame:
 
                 # Split the input string into a list using the comma as a delimiter
                 player.votes = [item.strip() for item in user_input.split(",")]
-            time.sleep(self.speed+7)
+            time.sleep(self.speed+3)
 
     def nomination_phase(self):
         print("\n--- Nomination Phase ---")
@@ -678,6 +741,8 @@ class WerewolfGame:
         nominators = alive_players
         
         while len(nominations) < len(alive_players) - 1 and nominators:
+            if self.game_over:
+                break
             nominator = random.choice(nominators)
             available_nominations = [p.name for p in alive_players if p.name not in nominations and p.name != nominator.name]
             nominators = [p for p in nominators if  p.name != nominator.name]
