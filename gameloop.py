@@ -54,7 +54,7 @@ class Player:
             self.color = "evil"
         else:
             self.color = "good"
-        self.bluff = ""
+        self.bluff = "None"
 
     def __repr__(self):
         return f"{self.name} ({'Alive' if self.alive else 'Dead'}) - {self.role}"
@@ -125,30 +125,31 @@ class WerewolfGame:
     
     def introduce_ai_player(self, player):
         prompt = f"""
-        You are {player.name}, playing a Werewolf game. Your role is {player.role}.
-        Here are the evil roles. They have their own win conditions.
-        - The Werewolf eliminates one player per night. Wins if they kill everyone
-        - The Jester wants to be voted out by the town. They win if do, everyone else loses.
+You are {player.name}, playing a Werewolf game. Your role is {player.role}.
+Here are the evil roles. They have their own win conditions.
+- The Werewolf eliminates one player per night. Wins if they kill everyone
+- The Jester wants to be voted out by the town. They win if do, everyone else loses.
 
-        Here are all the good roles: they all win by executing the Werewolf
-        - The Seer checks players, but might be Drunk. They either learn werewolf or not werewolf
-        - The Drunk has been told they are Seer, but always get opposite results.
-        - The Steward starts the game knowing one player is not the werewolf. They learn nothing else but can trust that player.
-        - The Medium learns the role of the first character that dies each night.
-        - The Monk protects one player from death per night.  
-        - The Fighter wants the Werewolf to kill them. They can kill a player if they are killed.
-        - The Sailor survives death once. They learn if they were attacked at night.
-        - The Saint must avoid being voted out by the town. Werewolf wins if they are.
-        - The Psycho kills every night. The werewolf and protected players are immune. 
-        - Villager is not the werewolf, probably
-        
-        
-        Any of the roles besides Werewolf could not be in play. 
+Here are all the good roles: they all win by executing the Werewolf
+- The Seer checks players, but might be Drunk. They either learn werewolf or not werewolf
+- The Drunk has been told they are Seer, but always get opposite results.
+- The Steward starts the game knowing one player is not the werewolf. They learn nothing else but can trust that player.
+- The Medium learns the role of the first character that dies each night. If no one dies they learn nothing.
+- The Monk protects one player from death per night. If no deaths occur they can probably trust that player.
+- The Fighter wants the Werewolf to kill them. They can kill a player if they are killed.
+- The Sailor survives death once. They learn if they were attacked at night.
+- The Saint must avoid being voted out by the town. Werewolf wins if they are.
+- The Psycho kills every night. The werewolf and protected players are immune. 
+- Villager is not the werewolf, probably
 
-        ALWAYS REFERENCE THESE ROLES WHEN BLUFFING AS CHARACTER
-        
-        Consistency is really important. Try to always stick to one story.
-        You are sleuths trying to solve the murders. You should be trying to find out what role everyone is, and kill the ones who are most a threat.
+
+Any of the roles besides Werewolf could not be in play. 
+
+ALWAYS REFERENCE THESE ROLES WHEN BLUFFING AS CHARACTER
+
+Consistency is really important. Try to always stick to one story.
+You are sleuths trying to solve the murders. You should be trying to find out what role everyone is, and kill the ones who are most a threat.
+Be aggressive and suspicious to anyone you think is a Werewolf candidate. Trust the players you know are not Werewolf candidates.
         """
         if player.role == "Werewolf":
             prompt += "/n " + player.bluff + " is the Werewolf's bluff. It is not in play and is safe to bluff as over the course of the game. Only you know this information so take advantage of it."
@@ -164,14 +165,14 @@ class WerewolfGame:
         # Give AI the current circumstances and ask for direction
 
         prompt = f"""
-        it is night {str(self.night)}
-        You are {player.name}, playing as {player.role} in a game of Werewolf.
-        These are your options {', '.join(options)}
-        
-        Your task is to make a decision: {decision_type}.
-        Respond with ONLY one item from the list. No explanations.
-    
-        Answer format: [Exact option from the list]
+it is night {str(self.night)}
+You are {player.name}, playing as {player.role} in a game of Werewolf.
+These are your options {', '.join(options)}
+
+Your task is to make a decision: {decision_type}.
+Respond with ONLY one item from the list. No explanations.
+
+Answer format: [Exact option from the list]
         """
 
         messages = self.ai_agents[player.name]  # Get player's chat history
@@ -225,6 +226,7 @@ class WerewolfGame:
                 print_colored(werewolf.color,f"Werewolf {werewolf.name} attacks {target.name}, but they are protected!")
             else:
                 if target == sailor:
+                    print_colored(werewolf.color,f"Werewolf {werewolf.name} attacks {target.name}, but they are protected!")
                     print_colored(sailor.color,f"Sailor {sailor.name} becomes mortal")
                     
                     current_prompt = self.ai_agents[sailor.name][0]["content"]
@@ -237,7 +239,7 @@ class WerewolfGame:
                     sailor.true_role = "Mortal"
                     sailor = None
                 else:
-                    dead.append(target)
+                    dead.append(target.name)
                     print_colored(werewolf.color,f"Werewolf {werewolf.name} attacks {target.name}.")
                     target.alive = False
                     if target.role == "Fighter": 
@@ -248,6 +250,7 @@ class WerewolfGame:
                             print_colored(fighter.color,f"Fighter {fighter.name} attacks {target.name}, but they are protected!")
                         else:
                             if target == sailor:
+                                print_colored(fighter.color,f"Fighter {fighter.name} attacks {target.name}, but they are protected!")
                                 print_colored(sailor.color,f"Sailor {sailor.name} becomes mortal")
                                 current_prompt = self.ai_agents[sailor.name][0]["content"]
                                 string = "night " + str(self.night) + " I was attacked and lost my protection"
@@ -261,7 +264,7 @@ class WerewolfGame:
                             else:
                                 print_colored(fighter.color,f"Fighter {fighter.name} attacks {target.name}.")
                                 target.alive = False
-                                dead.append(target)
+                                dead.append(target.name)
                                 if target == werewolf:
                                     self.check_winner()
             time.sleep(self.speed+3)
@@ -286,6 +289,7 @@ class WerewolfGame:
                     print_colored(psycho.color,f"Psycho {psycho.name} attacks {target.name}, but they are protected!")
             else:
                 if target == sailor:
+                    print_colored(psycho.color,f"Psycho {psycho.name} attacks {target.name}, but they are protected!")
                     print_colored(sailor.color,f"Sailor {sailor.name} becomes mortal")
                     current_prompt = self.ai_agents[sailor.name][0]["content"]
                     string = "night " + str(self.night) + " I was attacked and lost my protection"
@@ -297,7 +301,7 @@ class WerewolfGame:
                     sailor.true_role = "Mortal"
                     sailor = None
                 else:
-                    dead.append(target)
+                    dead.append(target.name)
                     print_colored(psycho.color,f"Psycho {psycho.name} attacks {target.name}.")
                     target.alive = False
             time.sleep(self.speed+3)
@@ -353,7 +357,7 @@ class WerewolfGame:
             string = "night "+ str(self.night) + "no one died"
             current_prompt = self.ai_agents[medium.name][0]["content"]
             if len(dead) > 0:
-                seen = dead[0]
+                seen = next((p for p in self.players if p.name == dead[0] ), None)
                 string = "night " + str(self.night) + " I learned " + seen.name + " was the " + seen.true_role + ". This means no other players can be that role."
                 # Append the new critical information to the prompt
                 print_colored(medium.color,f"Medium {medium.name} learns {seen.name} is a {seen.true_role}")
@@ -362,8 +366,8 @@ class WerewolfGame:
             self.ai_agents[medium.name][0]["content"] = updated_prompt
             self.ai_agents[medium.name].append({"primary role": "player", "content": string})
             
-        dead_list = [p.name for p in dead]
-        message = str(random.shuffle(dead_list))
+        random.shuffle(dead)
+        message = str(dead)
         if len(dead) == 0:
             message = "Nobody died last night"
         else:
@@ -421,17 +425,22 @@ class WerewolfGame:
         alive_players = [p for p in self.players if p.alive]
 
         num_rounds = max(0, 1 + convos - self.night)
+        used_conversations = set()
 
         for _ in range(num_rounds):
+            
             random.shuffle(alive_players)
             conversations = []
-            used_conversations = set()
+            
 
             # Create groups of 2 (one group of 3 if odd number of players)
             i = 0
             attempts = 0
             while i < len(alive_players):
-                if i + 4 > len(alive_players):  
+                
+                if i + 4 > len(alive_players): 
+                    group = tuple(sorted(alive_players[i:], key=lambda p: p.name))
+                    used_conversations.add(group)
                     conversations.append(alive_players[i:])  # Last group (2 or 3)
                     break
                 else:
@@ -441,8 +450,9 @@ class WerewolfGame:
                         used_conversations.add(group)
                         i += 2
                     else: 
+                        attempts +=1
                         alive_players[i], alive_players[i+2+attempts] = alive_players[i+2+attempts], alive_players[i]
-                        print("attempt #" + attempts)
+                        print("attempt #" + str(attempts))
                         
                     
             
@@ -462,29 +472,40 @@ class WerewolfGame:
                 for turn in range(1+len(convo)):    # Each player speaks twice
                     speaker = convo[turn % len(convo)]
                     prompt = f"""
-            you are {speaker.name} and you know for a fact that you are a {speaker.role} bluffing as {speaker.bluff} in a private conversation with {', '.join(o.name for o in participant if o.name != p.name)}
-            You do not have to commit to the role you are bluffing as
-            Do not say you are the same role as another player unless you are that player or you are the Werewolf
-            you are now in a private conversation. Feel free to share any information you have. 
-            Make sure you respond to the messages already in this conversation. DO NOT REPEAT ANY MESSAGES YOU HAVE SEEN.
-            You should claim to be a role (Villager, Seer, Monk, Fighter, Steward, Medium, Saint, Sailor, Psycho, Jester)
-            Some roles might want to lie about what role they are, like Werewolf. 
-            You can relay false information if you think it will help.
-            No ability will ever fail, 
-            Keep your conversation brief, 2-3 sentences.
-            Do not introduce yourself. Assume they already know your name. DO NOT SAY YOUR NAME.
-            Do not assume that you should follow the same format as the message you've seen. 
+you are {speaker.name} and you know for a fact that you are a {speaker.role} bluffing as {speaker.bluff} in a private conversation with {', '.join(o.name for o in participant if o.name != p.name)}
+You do not have to commit to the role you are bluffing as
+Do not say you are the same role as another player unless you are that role or you are the Werewolf
+you are now in a private conversation. Feel free to share any information you have. 
+Make sure you respond to the messages already in this conversation. DO NOT REPEAT ANY MESSAGES YOU HAVE SEEN.
+You should claim to be a role (Villager, Seer, Monk, Fighter, Steward, Medium, Saint, Sailor, Psycho, Jester)
+Some roles might want to lie about what role they are, like Werewolf. 
+You can relay false information if you think it will help.
+No ability will ever fail, never claim that you don't know who you chose last night or that you don't know the outcome. 
+Either you learned something or you did not. No claiming that results were inconclusive or anything like that.
+No saying Vague or Inconclusive. You need to be precise.
+Do not say you don't know something about your role. - Instead say you do not want to reveal that information yet.
+Do not say you know someone is the werewolf unless you have a piece of evidence. - Instead say there are a Werewolf candidate.
+If you do not want to claim your role you can offer up two roles offering a "2 for 2". - You suggest 2 roles you might be and the other might do the same. I am either the X or Y. 
+Do not say you are learning towards something. Instead say I am claiming this or that. 
+Keep your conversation brief, 2-3 sentences.
+Do not introduce yourself. Assume they already know your name. DO NOT SAY YOUR NAME.
+Do not assume that you should follow the same format as the message you've seen. 
+Do not comment on emotions. you shouldnt act scared or worried. You should act skeptical and inquisitve.
+Death does not concern you.
 
-            You should be concered if 2 players are claiming the same role. One of them is lying. 
-            Therefore do not claim a role that someone else is claiming unless you have reason to believe they are not that role.
+Do not comment about a players death unless you know something about them like their role. 
+Your talk should soley revolve around the game you are playing. 
+Do not comment on who died unless you have infromation regarding it. 
 
-            Always look at the prior convesations. to see if you have already claimed a role to the people you are in a conversation with. 
-            Do not gossip about players that you havent talked to or heard about. If a player does not exist in your history you know nothing about them. 
-            Do not gossip about player roles that no one has claimed. if no one including yourself is claimging to be that role in your history you know nothing about it.
-            You should have absoulte certainty about the things you know and no knowledge of the things that are not in your history.
+You should be concered if 2 players are claiming the same role. One of them is lying. 
+Therefore do not claim a role that someone else is claiming unless you have reason to believe they are not that role.
 
-            Stick to one bluff at a time. Do not say you are a role that you are not and are not bluffing unless you are the Werewolf or Fool
-             
+Always look at the prior convesations. to see if you have already claimed a role to the people you are in a conversation with. 
+Do not gossip about players that you havent talked to or heard about. If a player does not exist in your history you know nothing about them. 
+Do not gossip about player roles that no one has claimed. if no one including yourself is claimging to be that role in your history you know nothing about it.
+You should have absoulte certainty about the things you know and no knowledge of the things that are not in your history.
+
+Stick to one bluff at a time. Do not say you are a role that you are not and are not bluffing unless you are the Werewolf or Fool 
             """
                     speaker = convo[turn % len(convo)]
                     if speaker.role == "Werewolf":
@@ -507,7 +528,7 @@ class WerewolfGame:
                 self.bluffing()
                 time.sleep(1)    
                     
-    def reflection(self, length):
+    def reflection(self, ):
         print("\n--- Self Reflection Phase ---")
 
         alive_players = [p for p in self.players if p.alive]
@@ -516,24 +537,26 @@ class WerewolfGame:
             messages = self.ai_agents[player.name]
             prompt = "It is day " + str(self.night) + ". you are a " + player.role + ". "
             prompt += f"""
-            The following players are still alive: {', '.join(p.name for p in alive_players)}
-            This is your chance to record everything you know about the game privately, Think of this as an internal monologue.
-            Every player has a unique role. Have you learned what roles players are claiming?
-            What role have you been claiming? If this isn't your real role what information have you been giving out?
-            What is your route to victory? Who do you need to execute to get there?  
-            Who do you think should not be executed? is it because they are good? or Because you suspect them of being a Jester?
-            Do you think there is a drunk in play?
+The following players are still alive: {', '.join(p.name for p in alive_players)}
+This is your chance to record everything you know about the game privately, Think of this as an internal monologue.
+Every player has a unique role. Have you learned what roles players are claiming?
+What role have you been claiming? If this isn't your real role what information have you been giving out?
+What is your route to victory? Who do you need to execute to get there?  
+Who do you think should not be executed? is it because they are good? or Because you suspect them of being a Jester?
+Do you think there is a drunk in play?
 
-            Keep your responses brief, summarize the most important points that you want to remember. Maxium number of sentences is {self.speed + 2}
-            Its ok to not answer every question. 
-            Focus on remembering what you have claimed and what you want to claim in the future
-            Also on suspicions: who is the drunk, who is the jester who is the werewolf?
+Keep your responses brief, summarize the most important points that you want to remember. Maxium number of sentences is {self.convos + 3}
+Its ok to not answer every question. 
+Focus on remembering what you have claimed and what you want to claim in the future
+List all the players and the roles they have claimed so you can reference it in case they change their claim
             """
             
             if player.role == "Werewolf":
                 prompt += f"""
-            Who do you think would be a good kill? Are you planning on claiming the same role tomorrow or switching up your role?
-            Does the information you are giving out make sense given the role descripitions you've been given?
+Who do you think would be a good kill? Are you planning on claiming the same role tomorrow or switching up your role?
+Does the information you are giving out make sense given the role descripitions you've been given?
+Has anyone given out information that you know to be false?
+List all the players and the roles they have claimed so you can reference it in case they change their claim
             """
             model = genai.GenerativeModel("gemini-1.5-flash")
             response = model.generate_content("here is the chat history: " + str(messages) + "now respond to this prompt: " + prompt)
@@ -553,11 +576,13 @@ class WerewolfGame:
         alive_players = [p for p in self.players if p.alive]
         random.shuffle(alive_players)
 
+        repeats = max(1, repeats)
+
         for _ in range(repeats):
             
             for player in alive_players:
                 messages = self.ai_agents[player.name] # get chat history
-                prompt = "It is day " + str(self.night) + ". you are a " + player.role + " bluffing " + player.bluff
+                prompt = "It is day " + str(self.night) + ". you are a " + player.role + ". In the past you have bluffed as a  " + player.bluff 
                 if player.role == "Werewolf":
                     prompt += ". You must not tell anyone this, instead you should falsely claim to be a role that you think will not be executed. You CANNOT pretend to be a villager."
                 if player.role == "Seer":
@@ -569,23 +594,28 @@ class WerewolfGame:
                 if player.role == "Fighter" or player.role == "Sailor" :
                     prompt += ". Remember you want to get attacked by the Werewolf. The Werewolf might not attack you if you are truthful about your role." 
                 prompt += f"""
-                The following players are still alive: {', '.join(p.name for p in alive_players)}
-                What would you like to tell the other players? 
-                You should claim to be a role (Villager, Seer, Monk, Fighter, Steward, Medium, Saint, Sailor, Pyscho, Jester)
-                You can bluff about what role you are. Try to be consistent with your past role claims, or give justification for why you are chainging your claim. 
-                You should not bluff unless you have to.
-                If you learned something last night, you should tell the other players 
-                You can relay false information and should do so if you are bluffing about what role you are. You should not do this often. unless you are bluffing a character
+The following players are still alive: {', '.join(p.name for p in alive_players)}
+What would you like to tell the other players? 
+You should claim to be a role 
+(Villager, Seer, Monk, Fighter, Steward, Medium, Saint, Sailor, Pyscho, Jester)
+You can bluff about what role you are. 
+Try to be consistent with your past role claims
+give justification for why you are chainging your claim. 
+You should not lie about your role unless you have to.
+If you learned something last night, you should tell the other players.
+Do not say you don't know something about your role. - Instead say you do not want to reveal that information yet.
+Do not say you know someone is the werewolf unless you have a piece of evidence. - Instead say there are a Werewolf candidate.
+You can relay false information and should do so if you are bluffing about what role you are. You should not do this often. unless you are bluffing a character
 
-                Remember there can only be one of each role. You should question anybody claiming the same role as yourself or someone else.
+Remember there can only be one of each role. You should question anybody claiming the same role as yourself or someone else.
 
-                There is a jester and werewolf lying about their role. Avoid executing the jester.
+There is a jester and werewolf lying about their role. Avoid executing the jester.
 
-                There also could be a drunk who thinks they are seer. 
-                
-                Suggest a player for execution if you suspect someone. 
+There also could be a drunk who thinks they are seer. 
 
-                Please keep your responses to 1-2 short sentences.  
+Suggest a player for execution if you suspect someone. 
+
+Please keep your responses to 1-2 short sentences.  
                 """
                 
                 # Send prompt
@@ -612,19 +642,19 @@ class WerewolfGame:
             messages = self.ai_agents[player.name] # get chat history
 
             prompt = f"""
-            you are {player.name}, a {player.role}
-            The following players are still alive: {', '.join(p.name for p in alive_players)}
-            Remember to look at the role that you are and that you believe other players are. 
-            Based on the current game state, return a JSON object with a list of players you would nominate.
-            Do not add any explinations, just say which players you think are potentially the werewolf.
-            You should name at least one player. You can name as many as you like.
-            The more players you name the more likely an execution is to occur.
-            The first name should be the player you most want to execute (if any).
-            Only respond with the JSON object and no other words.
-            You must follow this Example format: 
-            {{
-                "votes": ["Player1", "Player2", "Player3"]
-            }}
+you are {player.name}, a {player.role}
+The following players are still alive: {', '.join(p.name for p in alive_players)}
+Remember to look at the role that you are and that you believe other players are. 
+Based on the current game state, return a JSON object with a list of players you would nominate.
+Do not add any explinations, just say which players you think are potentially the werewolf.
+You should name at least one player. You can name as many as you like.
+The more players you name the more likely an execution is to occur.
+The first name should be the player you most want to execute (if any).
+Only respond with the JSON object and no other words.
+You must follow this Example format: 
+{{
+    "votes": ["Player1", "Player2", "Player3"]
+}}
             """
 
             if player.role == "Jester":
