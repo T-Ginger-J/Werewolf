@@ -389,7 +389,7 @@ Answer format: [Exact option from the list]
         bluff_options = self.true_roles_pool + ["Werewolf", "None"]
 
         for p in alive_players:
-            prompt = "you are a " + p.role + " bluffing as " + p.bluff + " and you are deciding whether you want to bluff or not. It is best to stick with a role you are already claiming. You should not bluff (pick None) most of the time, but sometimes you might want to bluff to throw off the evil team."
+            prompt = "you are a " + p.role + " bluffing as " + p.bluff + " and you are deciding whether you want to bluff or not. Is it time to come clean and reveal the truth? It is best to stick with a role you are already claiming. You should not bluff (pick None) most of the time, but sometimes you might want to bluff to throw off the evil team."
             if p.role == "Werewolf":
                 prompt = "You are the Werewolf, and therefore have to bluff as a role. You can not bluff as Villager and you cannot select None as your bluff" 
                 if self.night ==1:
@@ -605,6 +605,10 @@ You should not lie about your role unless you have to.
 If you learned something last night, you should tell the other players.
 Do not say you don't know something about your role. - Instead say you do not want to reveal that information yet.
 Do not say you know someone is the werewolf unless you have a piece of evidence. - Instead say there are a Werewolf candidate.
+No saying Vague or Inconclusive. You need to be precise.
+Do not assume that you should follow the same format as the message you've seen. 
+Do not comment on emotions. you shouldnt act scared or worried. You should act skeptical and inquisitve.
+Death does not concern you.
 You can relay false information and should do so if you are bluffing about what role you are. You should not do this often. unless you are bluffing a character
 
 Remember there can only be one of each role. You should question anybody claiming the same role as yourself or someone else.
