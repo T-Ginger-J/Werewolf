@@ -237,7 +237,7 @@ class WerewolfGame:
                     dead.append(target.name)
                     target.alive = False
                     if target.AI ==  False:
-                        print(f"Werewolf {werewolf.name} attacks {target.name}.")
+                        print(f"{target.name} is attacked and dies.")
                     if target.role == "Fighter": 
                         time.sleep(self.speed+3)
                         target_name = self.get_ai_decision(fighter, "you have died, choose a player to kill", [p.name for p in self.players if p.alive])
