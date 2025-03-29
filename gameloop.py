@@ -7,7 +7,6 @@ import google.generativeai as genai
 import google.api_core.exceptions
 
 genai.configure(api_key="Your Gemini Key")
-genai.configure(api_key="AIzaSyCpQhC4ijKDYRvEsf-RPwpPbu9VA9k4I0s")
 
 #role for how to play
 #roleB for how to bluff
@@ -37,7 +36,7 @@ GUIDE = {
         "SailorB": "You have 2 lives! At some point you'll lose your first life and act scared. This is usually accompanied by a night of no deaths",
         "StewardB": "Stewards learn one piece of information. They know that one player is good and will trust them with absolute certainty.",
         "DrunkB": "Drunk, oof you got a low role bluff. Claim to be Investigator and give out horribly innaccurate results to make people think you are the drunk. Or give very accurate results and claim you cannot be the Drunk.",
-        "InvestigatorC": "Never Investigate a player you've already picked. Choose yourself to determine whether you are the Drunk or not.",
+        "InvestigatorC": "Never Investigate a player you've already picked. Your first Priority should be gaining information by selecting as many players that are not yourself and learning their role. If you need to know if you are the drunk, choose yourself.",
         "MonkC": "Protect players that have claimed strong roles. Did anyone else ask for you to protect them? If you know someone isnt the Werewolf either through Investigator or Steward information always prioritize them.",
         "VillagerC": "Villagers Act clueless but logical. Avoid making strong accusations without reason. They might bluff other roles to try and get killed at night so the roles with special abilities do not die",
         "PsychoC": "Everyone you kill is a Werewolf candidate taht you've eliminated. If you killed a player and they survived, you can kill someone else to kill more players or you can try to kill them again",
@@ -421,7 +420,7 @@ Answer format: [Exact option from the list]
         bluff_options = self.true_roles_pool + ["Werewolf", "None"]
 
         for p in alive_players:
-            prompt = "you are a " + p.role + " bluffing as " + p.bluff + " and you are deciding whether you want to bluff or not. Is it time to come clean and reveal the truth? It is best to stick with a role you are already claiming. You should not bluff (pick None) most of the time, but sometimes you might want to bluff to throw off the evil team."
+            prompt = "you are a " + p.role + " bluffing as " + p.bluff + " and you are deciding whether you want to bluff or not. Is it time to come clean and reveal the truth? It is best to stick with a role you are already claiming. You should not bluff (pick None) most of the time, but sometimes you might want to bluff to throw off the evil team. Yet again, spreading False information hurts your team, so bluff as little as possible"
             if p.role == "Werewolf":
                 prompt = "You are the Werewolf, and therefore have to bluff as a role. You can not bluff as Villager and you cannot select None as your bluff" 
                 if self.night ==1:
@@ -516,7 +515,7 @@ Some roles might want to lie about what role they are, like Werewolf.
 You can relay false information if you think it will help.
 No ability will ever fail, never claim that you don't know who you chose last night or that you don't know the outcome. 
 Either you learned something or you did not. No claiming that results were inconclusive or anything like that.
-No saying Vague or Inconclusive. You need to be precise.
+No saying  Vague or Inconclusive. You need to be precise.
 Do not say you don't know something about your role. - Instead say you do not want to reveal that information yet.
 Do not say you know someone is the werewolf unless you have a piece of evidence. - Instead say there are a Werewolf candidate.
 If you do not want to claim your role you can offer up two roles offering a "2 for 2". - You suggest 2 roles you might be and the other might do the same. I am either the X or Y. 
@@ -578,6 +577,8 @@ What role have you been claiming? If this isn't your real role what information 
 What is your route to victory? Who do you need to execute to get there?  
 Who do you think should not be executed? is it because they are good? or Because you suspect them of being a Jester?
 Do you think there is a drunk in play?
+How do you explain the number of deaths last night? No deaths could be caused by an alive Monk or Sailor. 2 Deaths could be caused by Pyscho or Fighter.
+If only one player died then that is not worth commenting on.
 
 Keep your responses brief, summarize the most important points that you want to remember. Maxium number of sentences is {self.convos + 3}
 Its ok to not answer every question. 
@@ -644,7 +645,7 @@ Do not say you know someone is the werewolf unless you have a piece of evidence.
 No saying Vague or Inconclusive. You need to be precise.
 Do not assume that you should follow the same format as the message you've seen. 
 Do not comment on emotions. you shouldnt act scared or worried. You should act skeptical and inquisitve.
-Death does not concern you.
+Death does not concern you and is not suspecious. Do not comment on it unless you have infor regarding it.
 You can relay false information and should do so if you are bluffing about what role you are. You should not do this often. unless you are bluffing a character
 
 Remember there can only be one of each role. You should question anybody claiming the same role as yourself or someone else.
