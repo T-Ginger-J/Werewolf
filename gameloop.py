@@ -7,20 +7,42 @@ import google.generativeai as genai
 import google.api_core.exceptions
 
 genai.configure(api_key="Your Gemini Key")
+genai.configure(api_key="AIzaSyCpQhC4ijKDYRvEsf-RPwpPbu9VA9k4I0s")
 
-BLUFF_GUIDE = {
-        "Investigator": "Investigators will claim to have investigated a player and will get either Werewolf or not a Werewolf. Remember that you could be drunk, which means there can be up to 2 good people that think they are investigator.",
-        "Angel": "Angels protect others. If there are no deaths at night they might have saved their target. Subtly defend an innocent player, making it seem like you know more than you do. Not all Angels will claim Angel at first, you can be coy. ",
-        "Villager": "Villagers Act clueless but logical. Avoid making strong accusations without reason. They might bluff other roles to try and get killed at night so the roles with special abilities do not die",
-        "Saint": "Saints BEG FOR YOUR LIFE! PLEASE DO NOT EXECUTE ME GOOD PEOPLE OF THIS TOWN",
-        "Jester": "Jesters are on team chaos. Pretend to be confused or reckless. Push for executions that might seem odd. Try not to be too overt to avoid suspicion. Make yourself the centre of attention.",
-        "Psycho": "Pyschos are forced to kill. If they do not kill their target, they accuse them of being the werewolf unless they claim to be . Remember, they are still trying to win with good.",
-        "Werewolf": "Werewolf... Don't bluff as werewolf... its even a little extreme for a fool to claim werewolf.",
-        "Medium": "Mediums learn one role per night and that role can no longer be in play since it is dead. They will accuse players claiming to be the roles they know are dead.",
-        "Veteran": "Veterans are trying to die, so you will probably claim something other than Veteran to some people. When you die you can try and take the Werewolf down with you so don't get protected by Angels", 
-        "Sailor": "You have 2 lives! At some point you'll lose your first life and act scared. This is usually accompanied by a night of no deaths",
-        "Steward": "Stewards learn one piece of information. They know that one player is good and will trust them with absolute certainty.",
-        "Drunk": "Drunk, oof you got a low role bluff. Claim to be Investigator and give out horribly innaccurate results to make people think you are the drunk. Or give very accurate results and claim you cannot be the Drunk."
+#role for how to play
+#roleB for how to bluff
+#roleC for how to choose at night
+
+GUIDE = {
+        "Investigator": "Investigators gain very powerful information, but they have to struggle with the fact that they could be Drunk getting false results. There could be up to one other Investigator so do not be overly concerned if there is one other Seer claim. Just remember one gets true information and the other gets false info. If there are 3 or more Seer claims than there are definitely liars in that group. If you ever get 2 different players are both Werewolf, that means you are Drunk and actually neither is Werewolf. If you ever choose yourself you can know for sure if you are the Drunk or Investigator. A Drunk will see their own name labelled as Werewolf, which coudlnt be true. A Drunk Investigator must reverse all its information. Leraning Werewolf actually means the player is not a werewolf.", 
+        "Monk": "Monks protect others from death at night. If there are no deaths at night they might have saved their target. A target that was attacked by the Werewolf is not the Werewolf, and therefore can be trusted. Not all Monks will claim Monk, as they have an important role and want to survive. They might privately ask if players want to be protected.",
+        "Villager": "Villagers Act clueless but logical. Avoid making strong accusations without reason. They might bluff other roles to try and get killed at night. Try not to do more damage than good by spreading false information as you cannot correct it when you are dead. Tell people it is impossible for a Werewolf to claim villager",
+        "Saint": "Saints BEG FOR YOUR LIFE! PLEASE DO NOT EXECUTE ME GOOD PEOPLE OF THIS TOWN. Be LOUD. use CAPS LOCK TO INDICATE SHOUTING. At all costs avoid being exected. You want everyone to know you are Saint and that they lose if you are executed. Remind them at every occaison.",
+        "Jester": "Get yourself voted. Pretend to be confused or reckless. Push for executions that might seem odd. Make yourself the centre of attention. All the other players will be on the lookout for a Jester so do not be too overt. You can be meta and try and break the rules of the game by claiming to be a different player or spouting nonsense.",
+        "Psycho": "Pyschos are forced to kill. If they do not kill their target, they accuse them of being the werewolf. The only players that can survive are Werewolfs, Sailors with immunity and players protected by the Monk. Remember, they are still trying to win with good.",
+        "Werewolf": "Werewolfs try to blend in. They don't want to make a big impact. Just blend in with your surroundings. You are given a free role that is out of play. You should probably bluff this. Give out as little information, so your fake results are less likely to be contradictory, or give out a deluge of information to overwhelm people.",
+        "Medium": "Mediums learn one role per night and that role can no longer be in play since it is dead. They will accuse players claiming to be the roles they know are dead. They might not share what role died privately so they can bait someone into claiming that role, and then reveal their information publicly.",
+        "Fighter": "Fighters are trying to die at night, so you will probably claim something other than Veteran to some people. When you die at night you can try and take the Werewolf down with you so try to avoid getting protected by Monks. You do not want to be killed during the day so try not to lie too much", 
+        "Sailor": "You have 2 lives! At some point you'll lose your first life and act scared. You will learn when you are attacked. You can either act immortal, or claim a different role and try and get attacked. When you are attacked there will probably be no deaths at night, so you can claim to be responsible, and confirm yourself as not a Werewolf",
+        "Steward": "Stewards learn one piece of information. They know that one player is good and will trust them with absolute certainty. You can share that you trust them, but it might put a target on their back for the Werewolf to kill them. You are fine with getting voted out yourself, but make sure the player you learn is not.",
+        "InvestigatorB": "Investigators will claim to have investigated a player and will get either Werewolf or not a Werewolf. Remember that you could be drunk, which means there can be up to 2 good people that think they are investigator.",
+        "MonkB": "Monk protect others. They cannot choose themselves. If there are no deaths at night they might have saved their target. Subtly defend an innocent player, making it seem like you know more than you do. Not all Monks will claim Monk at first, you can be coy. ",
+        "VillagerB": "Villagers Act clueless but logical. Avoid making strong accusations without reason. They might bluff other roles to try and get killed at night so the roles with special abilities do not die",
+        "SaintB": "Saints BEG FOR YOUR LIFE! PLEASE DO NOT EXECUTE ME GOOD PEOPLE OF THIS TOWN",
+        "JesterB": "Jesters are on team chaos. Pretend to be confused or reckless. Push for executions that might seem odd. Try not to be too overt to avoid suspicion. Make yourself the centre of attention.",
+        "PsychoB": "Pyschos are forced to kill. If they do not kill their target, they accuse them of being the werewolf unless they claim to be . Remember, they are still trying to win with good.",
+        "WerewolfB": "Werewolf... Don't bluff as werewolf... its even a little extreme for a fool to claim werewolf.",
+        "MediumB": "Mediums learn one role per night and that role can no longer be in play since it is dead. They will accuse players claiming to be the roles they know are dead.",
+        "FighterB": "Fighters are trying to die, so you will probably claim something other than Veteran to some people. When you die you can try and take the Werewolf down with you so don't get protected by Monks", 
+        "SailorB": "You have 2 lives! At some point you'll lose your first life and act scared. This is usually accompanied by a night of no deaths",
+        "StewardB": "Stewards learn one piece of information. They know that one player is good and will trust them with absolute certainty.",
+        "DrunkB": "Drunk, oof you got a low role bluff. Claim to be Investigator and give out horribly innaccurate results to make people think you are the drunk. Or give very accurate results and claim you cannot be the Drunk.",
+        "InvestigatorC": "Never Investigate a player you've already picked. Choose yourself to determine whether you are the Drunk or not.",
+        "MonkC": "Protect players that have claimed strong roles. Did anyone else ask for you to protect them? If you know someone isnt the Werewolf either through Investigator or Steward information always prioritize them.",
+        "VillagerC": "Villagers Act clueless but logical. Avoid making strong accusations without reason. They might bluff other roles to try and get killed at night so the roles with special abilities do not die",
+        "PsychoC": "Everyone you kill is a Werewolf candidate taht you've eliminated. If you killed a player and they survived, you can kill someone else to kill more players or you can try to kill them again",
+        "WerewolfC": "Pick players that have claimed strong roles like Investigator or Medium. Also kill players that have accused you or voted for you, as they will probably try again.",
+        "FighterC": "You have one chance to pick the werewolf. Choose the player you are most suspicious of."        
 } 
 
 
@@ -62,10 +84,10 @@ class Player:
 class WerewolfGame:
     def __init__(self, debug=False):
         
-        self.playercount = 5  # Default player count
+        self.playercount = 7  # Default player count
         self.convos = 2
         self.speed = 2
-        self.mode = 1
+        self.mode = 2
         if debug:
             self.playercount = int(input("Enter the number of players: (5-10)") or self.playercount)
             self.convos = int(input("Enter the number of coversations on day 1: (1-3)") or self.convos)
@@ -126,6 +148,8 @@ class WerewolfGame:
     def introduce_ai_player(self, player):
         prompt = f"""
 You are {player.name}, playing a Werewolf game. Your role is {player.role}.
+You are playing a social deduction game and will be lying and or sleuthing to win. 
+
 Here are the evil roles. They have their own win conditions.
 - The Werewolf eliminates one player per night. Wins if they kill everyone
 - The Jester wants to be voted out by the town. They win if do, everyone else loses.
@@ -142,6 +166,7 @@ Here are all the good roles: they all win by executing the Werewolf
 - The Psycho kills every night. The werewolf and protected players are immune. 
 - Villager is not the werewolf, probably
 
+Players that are dead can no longer be Werewolf. Only engage with players that you know are still alive.
 
 Any of the roles besides Werewolf could not be in play. 
 
@@ -153,10 +178,15 @@ Be aggressive and suspicious to anyone you think is a Werewolf candidate. Trust 
         """
         if player.role == "Werewolf":
             prompt += "/n " + player.bluff + " is the Werewolf's bluff. It is not in play and is safe to bluff as over the course of the game. Only you know this information so take advantage of it."
-        
+
+        prompt += f"As a {player.role} This is what I need to know: {GUIDE[player.role]}"
+
+        if player.role+"C" in GUIDE:
+            prompt += f"When choosing a player, I should always remember that {GUIDE[player.role+"C"]}" 
+
             # response = ollama.chat(model="mistral", messages=[{"role": "user", "content": prompt}])
         self.ai_agents[player.name] = [{"role": "user", "content": prompt}]
-            
+        
         
             # print(f"Error initializing AI for {player.name}: {e}")
 
@@ -173,7 +203,9 @@ Your task is to make a decision: {decision_type}.
 Respond with ONLY one item from the list. No explanations.
 
 Answer format: [Exact option from the list]
-        """
+"""
+        if player.role+"C" in GUIDE:
+            prompt += "The following is non binding advice for choosing. you do not have to stick to its rules its just a general guide. " + GUIDE.get(player.role+"C")
 
         messages = self.ai_agents[player.name]  # Get player's chat history
         
@@ -410,8 +442,13 @@ Answer format: [Exact option from the list]
                     p.color = "good"
             if p.bluff != bluff_role:
                 p.bluff = bluff_role
-                bluff_strategy = "I might claim to be buffing" + BLUFF_GUIDE.get(bluff_role, "Nothing. I plan to just tell the truth") + "but that doesnt mean I am locked on this decision"
-                self.ai_agents[p.name].append({"role": "assistant", "content": bluff_strategy})
+                bluff_strategy = f"day {str(self.night)} I might claim to be buffing {GUIDE.get(bluff_role + "B", "Nothing. I plan to just tell the truth.")} but that doesnt mean I am locked on this decision"
+                current_prompt = self.ai_agents[p.name][0]["content"]
+                updated_prompt = current_prompt + "\n" + bluff_strategy
+                        # Update the first message with the new prompt
+                self.ai_agents[p.name][0]["content"] = updated_prompt
+
+
                 print_colored(p.color,p.name + " the " + p.role + " is bluffing as: " + bluff_role)
             time.sleep(self.speed+1)
 
@@ -452,10 +489,7 @@ Answer format: [Exact option from the list]
                     else: 
                         attempts +=1
                         alive_players[i], alive_players[i+2+attempts] = alive_players[i+2+attempts], alive_players[i]
-                        print("attempt #" + str(attempts))
                         
-                    
-            
             # Run each private conversation
             for convo in conversations:
                 participant = [p for p in convo]
@@ -572,6 +606,8 @@ List all the players and the roles they have claimed so you can reference it in 
             time.sleep(self.speed+5)
 
     def discussion(self, repeats):
+        for p in self.players:
+            self.ai_agents[p.name].append({"role": "assistant", "content": "Private conversations are now closed. Future discussion is done pubicly to everyone alive. Should you keep your bluff or tell the truth now that you ahve everyone's attention?"})
         print("\n--- Discussion Phase ---")
         alive_players = [p for p in self.players if p.alive]
         random.shuffle(alive_players)
@@ -582,7 +618,7 @@ List all the players and the roles they have claimed so you can reference it in 
             
             for player in alive_players:
                 messages = self.ai_agents[player.name] # get chat history
-                prompt = "It is day " + str(self.night) + ". you are a " + player.role + ". In the past you have bluffed as a  " + player.bluff 
+                prompt = "It is day " + str(self.night) + " and private discussions are now closed. . you are a " + player.role + ". In the past you have bluffed as a  " + player.bluff 
                 if player.role == "Werewolf":
                     prompt += ". You must not tell anyone this, instead you should falsely claim to be a role that you think will not be executed. You CANNOT pretend to be a villager."
                 if player.role == "Investigator":
@@ -619,7 +655,7 @@ There also could be a drunk who thinks they are investigator.
 
 Suggest a player for execution if you suspect someone. 
 
-Please keep your responses to 1-2 short sentences.  
+Please keep your responses to 1-2 short sentences.  You can also choose not to share any of these details. You can publicly withold a role claim, suspicions or just not say anything if you ahve nothing to add. 
                 """
                 
                 # Send prompt
@@ -772,10 +808,6 @@ You must follow this Example format:
             self.check_winner()
             if self.game_over:
                 break
-            time.sleep(1)
-            if self.mode > 1:
-                self.bluffing()
-                time.sleep(1)
             time.sleep(1)
             self.converstaions(self.convos)
             time.sleep(1)
