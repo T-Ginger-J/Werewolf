@@ -9,7 +9,7 @@ import google.api_core.exceptions
 genai.configure(api_key="Your Gemini Key")
 
 BLUFF_GUIDE = {
-        "Seer": "Seers will claim to have investigated a player and will get either Werewolf or not a Werewolf. Remember that you could be drunk, which means there can be up to 2 good people that think they are seer.",
+        "Investigator": "Investigators will claim to have investigated a player and will get either Werewolf or not a Werewolf. Remember that you could be drunk, which means there can be up to 2 good people that think they are investigator.",
         "Angel": "Angels protect others. If there are no deaths at night they might have saved their target. Subtly defend an innocent player, making it seem like you know more than you do. Not all Angels will claim Angel at first, you can be coy. ",
         "Villager": "Villagers Act clueless but logical. Avoid making strong accusations without reason. They might bluff other roles to try and get killed at night so the roles with special abilities do not die",
         "Saint": "Saints BEG FOR YOUR LIFE! PLEASE DO NOT EXECUTE ME GOOD PEOPLE OF THIS TOWN",
@@ -20,7 +20,7 @@ BLUFF_GUIDE = {
         "Veteran": "Veterans are trying to die, so you will probably claim something other than Veteran to some people. When you die you can try and take the Werewolf down with you so don't get protected by Angels", 
         "Sailor": "You have 2 lives! At some point you'll lose your first life and act scared. This is usually accompanied by a night of no deaths",
         "Steward": "Stewards learn one piece of information. They know that one player is good and will trust them with absolute certainty.",
-        "Drunk": "Drunk, oof you got a low role bluff. Claim to be Seer and give out horribly innaccurate results to make people think you are the drunk. Or give very accurate results and claim you cannot be the Drunk."
+        "Drunk": "Drunk, oof you got a low role bluff. Claim to be Investigator and give out horribly innaccurate results to make people think you are the drunk. Or give very accurate results and claim you cannot be the Drunk."
 } 
 
 
@@ -44,7 +44,7 @@ class Player:
     def __init__(self, name, role):
         self.name = name
         if (role == "Drunk"):
-            self.role = "Seer"
+            self.role = "Investigator"
         else:
             self.role = role
         self.alive = True
@@ -82,7 +82,7 @@ class WerewolfGame:
         self.players = []
         self.ai_agents = {}
         self.werewolf_role = ["Werewolf"]
-        self.true_roles_pool = ["Seer", "Monk", "Jester", "Villager", "Fighter", "Drunk", "Medium", "Steward", "Saint", "Sailor"]
+        self.true_roles_pool = ["Investigator", "Monk", "Jester", "Villager", "Fighter", "Drunk", "Medium", "Steward", "Saint", "Sailor"]
         self.player_names = ["Ian", "Si Jin", "Jeran", "Malcolm", "Dexter", "Spencer", "Nadia", "John", "Mike", "Anja"] 
         role_expansions = {
             6: lambda: self.true_roles_pool.append("Psycho"),
@@ -131,8 +131,8 @@ Here are the evil roles. They have their own win conditions.
 - The Jester wants to be voted out by the town. They win if do, everyone else loses.
 
 Here are all the good roles: they all win by executing the Werewolf
-- The Seer checks players, but might be Drunk. They either learn werewolf or not werewolf
-- The Drunk has been told they are Seer, but always get opposite results.
+- The Investigator checks players, but might be Drunk. They either learn werewolf or not werewolf
+- The Drunk has been told they are Investigator, but always get opposite results.
 - The Steward starts the game knowing one player is not the werewolf. They learn nothing else but can trust that player.
 - The Medium learns the role of the first character that dies each night. If no one dies they learn nothing.
 - The Monk protects one player from death per night. If no deaths occur they can probably trust that player.
@@ -306,21 +306,21 @@ Answer format: [Exact option from the list]
                     target.alive = False
             time.sleep(self.speed+3)
 
-        seer = next((p for p in self.players if p.true_role == "Seer" and p.alive), None)
+        investigator = next((p for p in self.players if p.true_role == "Investigator" and p.alive), None)
         drunk = next((p for p in self.players if p.true_role == "Drunk" and p.alive), None)
 
-        if seer:
-            suspect_name = self.get_ai_decision(seer, "choose a player to investigate", alive_players)
+        if investigator:
+            suspect_name = self.get_ai_decision(investigator, "choose a player to investigate", alive_players)
             suspect = next(p for p in self.players if p.name == suspect_name)
             result = "Werewolf" if suspect.role == "Werewolf" else "Not a Werewolf"
-            current_prompt = self.ai_agents[seer.name][0]["content"]
+            current_prompt = self.ai_agents[investigator.name][0]["content"]
             string = "night " + str(self.night) + " I investigated " + suspect_name + " and learned that they are " + result
             # Append the new critical information to the prompt
             updated_prompt = current_prompt + "\n" + string
                 # Update the first message with the new prompt
-            self.ai_agents[seer.name][0]["content"] = updated_prompt
-            self.ai_agents[seer.name].append({"role": "assistant", "content": string})
-            print_colored(seer.color,f"Seer {seer.name} investigates {suspect.name} and learns they are: {result}.")
+            self.ai_agents[investigator.name][0]["content"] = updated_prompt
+            self.ai_agents[investigator.name].append({"role": "assistant", "content": string})
+            print_colored(investigator.color,f"Investigator {investigator.name} investigates {suspect.name} and learns they are: {result}.")
             time.sleep(self.speed+3)
 
         if drunk:
@@ -395,8 +395,8 @@ Answer format: [Exact option from the list]
                 if self.night ==1:
                     prompt +=". To help you: the following role is out of play " + p.bluff + ". REMEMBER THIS ROLE. YOU DEFINITELY SHOULD BLUFF AS THIS ROLE AS IT IS THE SAFEST ONE TO DO"
             if p.role == "Veteran" or p.role == "Sailor" or p.role == "Psycho" or p.role == "Villager" or p.role == "Saint" or p.role == "Steward": 
-                prompt += ". you may want to bluff another role to try and get killed. You should choose a bluff most of the time. Pick roles like Angel, Psycho, and Seer or Medium"
-            if p.role == "Angel" or p.role == "Seer" or p.role == "Psycho" or p.role == "Medium":
+                prompt += ". you may want to bluff another role to try and get killed. You should choose a bluff most of the time. Pick roles like Angel, Psycho, and Investigator or Medium"
+            if p.role == "Angel" or p.role == "Investigator" or p.role == "Psycho" or p.role == "Medium":
                 prompt += ". you may want to bluff another role to try and avoid getting killed. You should not bluff most of the time but if you do you can pick a character more likely to want to die like Saint, Steward, Villager, Sailor, Veteran, Psycho or Fool"
             prompt += ". If you want to bluff as a specific character, you will be given information on how to play as that character." 
 
@@ -477,7 +477,7 @@ You do not have to commit to the role you are bluffing as
 Do not say you are the same role as another player unless you are that role or you are the Werewolf
 you are now in a private conversation. Feel free to share any information you have. 
 Make sure you respond to the messages already in this conversation. DO NOT REPEAT ANY MESSAGES YOU HAVE SEEN.
-You should claim to be a role (Villager, Seer, Monk, Fighter, Steward, Medium, Saint, Sailor, Psycho, Jester)
+You should claim to be a role (Villager, Investigator, Monk, Fighter, Steward, Medium, Saint, Sailor, Psycho, Jester)
 Some roles might want to lie about what role they are, like Werewolf. 
 You can relay false information if you think it will help.
 No ability will ever fail, never claim that you don't know who you chose last night or that you don't know the outcome. 
@@ -585,8 +585,8 @@ List all the players and the roles they have claimed so you can reference it in 
                 prompt = "It is day " + str(self.night) + ". you are a " + player.role + ". In the past you have bluffed as a  " + player.bluff 
                 if player.role == "Werewolf":
                     prompt += ". You must not tell anyone this, instead you should falsely claim to be a role that you think will not be executed. You CANNOT pretend to be a villager."
-                if player.role == "Seer":
-                    prompt += ". Remember that you might not actually be an seer, there is a chance you are the Drunk. If you found a Werewolf you should push for their execution."
+                if player.role == "Investigator":
+                    prompt += ". Remember that you might not actually be an investigator, there is a chance you are the Drunk. If you found a Werewolf you should push for their execution."
                 if player.role == "Jester":
                     prompt += ". Remember that you are trying to seem like the werewolf, but don't make it too obvious."
                 if player.role == "Saint":
@@ -597,7 +597,7 @@ List all the players and the roles they have claimed so you can reference it in 
 The following players are still alive: {', '.join(p.name for p in alive_players)}
 What would you like to tell the other players? 
 You should claim to be a role 
-(Villager, Seer, Monk, Fighter, Steward, Medium, Saint, Sailor, Pyscho, Jester)
+(Villager, Investigator, Monk, Fighter, Steward, Medium, Saint, Sailor, Pyscho, Jester)
 You can bluff about what role you are. 
 Try to be consistent with your past role claims
 give justification for why you are chainging your claim. 
@@ -615,7 +615,7 @@ Remember there can only be one of each role. You should question anybody claimin
 
 There is a jester and werewolf lying about their role. Avoid executing the jester.
 
-There also could be a drunk who thinks they are seer. 
+There also could be a drunk who thinks they are investigator. 
 
 Suggest a player for execution if you suspect someone. 
 
@@ -773,7 +773,7 @@ You must follow this Example format:
             if self.game_over:
                 break
             time.sleep(1)
-            if self.mode < 1:
+            if self.mode > 1:
                 self.bluffing()
                 time.sleep(1)
             time.sleep(1)
