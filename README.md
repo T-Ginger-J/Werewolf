@@ -1,24 +1,33 @@
-# Werewolf
-Classic werewolf game played by AI
+# Werewolf  
+Werewolf game played by AI  
 
-# Setting up: 
-Clone github or download zip and unzip code 
+# Setting up:  
+Clone github or download zip and unzip code  
     open this folder in terminal  
+    
 configure LLM:  
     Go to [google AI](aistudio.google.com/)  
     Use a non school gmail account (same one as google cloud)  
     Generate API key (free for limited tokens)  
     paste it into line 10  
+    
 run the following command:  
-    pip install google-generativeai 
+    pip install google-generativeai  
+    
 then you can start the game with:  
-    python gameloop.py 
+    python gameloop.py  
 
-Game is currently set to accommodate 5-7 players  
-Change the player count by altering line 270  
+Use Debug mode to edit parameters. Enable full mode for enhanced reasoning.  
+    pythion gameloop.py debug  
 
-If you have a different AI model you would like to use instead of mistral the program has been modularized so that all calls to the AI reference back to a single function defined on line 255  
-remove ollama and replace it with API calls or another local model easlily by modifiying this function  
+Debug options:  
+    Game is currently set to accommodate 5-10 players. Default is 5.  
+    Conversations dictates how many rounds of AI Agents speaking before the day ends.  
+    Mode 1 is fast. AI might forget conversations it had in the past.  
+    Mode 2 is full. It includes a bluffing and reflection stage to increase recall potential.  
+
+If you have a different AI model you would like to use instead of mistral the program has been modularized so that all calls to the AI reference back to a single callAI function.  
+Gemini and replace it with a different LLM API or a local model easlily by modifiying this function.  
 
 # Understand the game
 This is a social deduction game, and as such there is a small number of evils fighting a large number of good players. The evil team kills once per night while the good team has to band together and vote out one person per day. There is a small pool of special roles including the angel who protects a player, investigator who gains information, and a fool whos goal is to be voted out. These characters are randomly sampled, so besides the werewolf there is always a chance none of them exist. During the day players discuss to find who they will execute. A player is randomly selected to nominate first and if the player they nominate has enough people willing to vote for that player, they are executed. If not, the nominator and nominee are added to a list so they can nominate or be nominated again. This repeats until a player is executed or no more nominations can be made. 
