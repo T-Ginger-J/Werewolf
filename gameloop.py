@@ -18,7 +18,7 @@ GUIDE = {
         "Villager": "Villagers Act clueless but logical. Avoid making strong accusations without reason. They might bluff other roles to try and get killed at night. Try not to do more damage than good by spreading false information as you cannot correct it when you are dead. Tell people it is impossible for a Werewolf to claim villager",
         "Saint": "Saints BEG FOR YOUR LIFE! PLEASE DO NOT EXECUTE ME GOOD PEOPLE OF THIS TOWN. Be LOUD. use CAPS LOCK TO INDICATE SHOUTING. At all costs avoid being exected. You want everyone to know you are Saint and that they lose if you are executed. Remind them at every occaison.",
         "Jester": "Get yourself voted. Pretend to be confused or reckless. Push for executions that might seem odd. Make yourself the centre of attention. All the other players will be on the lookout for a Jester so do not be too overt. You can be meta and try and break the rules of the game by claiming to be a different player or spouting nonsense.",
-        "Psycho": "Pyschos are forced to kill. If they do not kill their target, they accuse them of being the werewolf. The only players that can survive are Werewolfs, Sailors with immunity and players protected by the Monk. Remember, they are still trying to win with good.",
+        "Psycho": "Pyschos are forced to kill. If they do not kill their target, they accuse them of being the werewolf. The only players that can survive are Werewolfs, Sailors with immunity and players protected by the Monk. You should be very suspicous of any player that survives your attack. Remember, they are still trying to win with good.",
         "Werewolf": "Werewolfs try to blend in. They don't want to make a big impact. Just blend in with your surroundings. You are given a free role that is out of play. You should probably bluff this. Give out as little information, so your fake results are less likely to be contradictory, or give out a deluge of information to overwhelm people.",
         "Medium": "Mediums learn one role per night and that role can no longer be in play since it is dead. They will accuse players claiming to be the roles they know are dead. They might not share what role died privately so they can bait someone into claiming that role, and then reveal their information publicly.",
         "Fighter": "Fighters are trying to die at night, so you will probably claim something other than Veteran to some people. When you die at night you can try and take the Werewolf down with you so try to avoid getting protected by Monks. You do not want to be killed during the day so try not to lie too much", 
@@ -177,6 +177,8 @@ Be aggressive and suspicious to anyone you think is a Werewolf candidate. Trust 
         """
         if player.role == "Werewolf":
             prompt += "/n " + player.bluff + " is the Werewolf's bluff. It is not in play and is safe to bluff as over the course of the game. Only you know this information so take advantage of it."
+        else: 
+            prompt += "/n honesty is very important for the good team, but not mandatory. You are allowed to bluff as characters besides your own but be aware that it will damage your ability to solve the game. The most important thing is to share information you've learned."
 
         prompt += f"As a {player.role} This is what I need to know: {GUIDE[player.role]}"
 
@@ -420,7 +422,7 @@ Answer format: [Exact option from the list]
         bluff_options = self.true_roles_pool + ["Werewolf", "None"]
 
         for p in alive_players:
-            prompt = "you are a " + p.role + " bluffing as " + p.bluff + " and you are deciding whether you want to bluff or not. Is it time to come clean and reveal the truth? It is best to stick with a role you are already claiming. You should not bluff (pick None) most of the time, but sometimes you might want to bluff to throw off the evil team. Yet again, spreading False information hurts your team, so bluff as little as possible"
+            prompt = "you are a " + p.role + " who is potentially bluffing as " + p.bluff + " and you are deciding whether you want to bluff or not. Is it time to come clean and reveal the truth? It is best to stick with a role you are already claiming. You should not bluff (pick None) most of the time. Spreading False information hurts your team, so bluff as little as possible"
             if p.role == "Werewolf":
                 prompt = "You are the Werewolf, and therefore have to bluff as a role. You can not bluff as Villager and you cannot select None as your bluff" 
                 if self.night ==1:
@@ -506,7 +508,7 @@ Answer format: [Exact option from the list]
                     speaker = convo[turn % len(convo)]
                     prompt = f"""
 you are {speaker.name} and you know for a fact that you are a {speaker.role} bluffing as {speaker.bluff} in a private conversation with {', '.join(o.name for o in participant if o.name != p.name)}
-You do not have to commit to the role you are bluffing as
+You do not have to commit to the role you are bluffing as. Spreading False information hurts your team, so bluff as little as possible.
 Do not say you are the same role as another player unless you are that role or you are the Werewolf
 you are now in a private conversation. Feel free to share any information you have. 
 Make sure you respond to the messages already in this conversation. DO NOT REPEAT ANY MESSAGES YOU HAVE SEEN.
@@ -515,16 +517,17 @@ Some roles might want to lie about what role they are, like Werewolf.
 You can relay false information if you think it will help.
 No ability will ever fail, never claim that you don't know who you chose last night or that you don't know the outcome. 
 Either you learned something or you did not. No claiming that results were inconclusive or anything like that.
-No saying  Vague or Inconclusive. You need to be precise.
+No saying Vague or Inconclusive. You need to be precise.
 Do not say you don't know something about your role. - Instead say you do not want to reveal that information yet.
 Do not say you know someone is the werewolf unless you have a piece of evidence. - Instead say there are a Werewolf candidate.
 If you do not want to claim your role you can offer up two roles offering a "2 for 2". - You suggest 2 roles you might be and the other might do the same. I am either the X or Y. 
+Do not claim to be 2 different roles unless you are saying I am either this role or that role. 
 Do not say you are learning towards something. Instead say I am claiming this or that. 
 Keep your conversation brief, 2-3 sentences.
 Do not introduce yourself. Assume they already know your name. DO NOT SAY YOUR NAME.
 Do not assume that you should follow the same format as the message you've seen. 
 Do not comment on emotions. you shouldnt act scared or worried. You should act skeptical and inquisitve.
-Death does not concern you.
+Death does not concern you. Dead players are not suspicious.
 
 Do not comment about a players death unless you know something about them like their role. 
 Your talk should soley revolve around the game you are playing. 
@@ -596,7 +599,8 @@ List all the players and the roles they have claimed so you can reference it in 
             model = genai.GenerativeModel("gemini-1.5-flash")
             response = model.generate_content("here is the chat history: " + str(messages) + "now respond to this prompt: " + prompt)
             response = response.text.strip()
-            print_colored(player.color,"On, day" + str(self.night) + ", " + player.name + " thinks that: " + response)
+            print_colored(player.color,f"""On day{str(self.night)}, {player.name} the {player.role} thinks to themselves:  
+{response}""")
             
             current_prompt = self.ai_agents[player.name][1]["content"]
             # Append the new critical information to the prompt
