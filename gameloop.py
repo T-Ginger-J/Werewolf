@@ -7,7 +7,7 @@ import threading
 import google.generativeai as genai
 import google.api_core.exceptions
 
-genai.configure(api_key="Your Gemini Key")
+genai.configure(api_key="AIzaSyCqhZ9AhOYNhi3puShJmEkxXGeqkN20eG0")
 
 GUIDE = {
         "Investigator": "Investigators gain very powerful information, but they have to struggle with the fact that they could be Drunk getting false results. There could be up to one other Investigator so do not be overly concerned if there is one other Seer claim. Just remember one gets true information and the other gets false info. If there are 3 or more Seer claims than there are definitely liars in that group. If you ever get 2 different players are both Werewolf, that means you are Drunk and actually neither is Werewolf. If you ever choose yourself you can know for sure if you are the Drunk or Investigator. A Drunk will see their own name labelled as Werewolf, which coudlnt be true. A Drunk Investigator must reverse all its information. Leraning Werewolf actually means the player is not a werewolf.", 
@@ -499,17 +499,17 @@ Answer format: [Exact option from the list]
             # Run each private conversation
             for convo in conversations:
                 participant = [p for p in convo]
-                human = any(p.alive and p.AI == False for p in convo)
-                if human:
-                    human = next((p.alive and p.AI == False for p in convo), None)
+                exist = any(p.alive and p.AI == False for p in convo)
+                if exist:
+                    human = next((p for p in self.players if p.AI == False and p.alive), None)
                     message = f"you are in a private conversation with {', '.join(p.name for p in participant)}. "
                     string = f"""
                     ----------------------------------------------------------------
 
                     {message}
                     ----------------------------------------------------------------"""
-                    if human:
-                        print_system("SYS", string) 
+                    
+                    print_system("SYS", string) 
                     for p in participant:
                         self.ai_agents[p.name].append({"role": "user", "content": message})
 
@@ -857,16 +857,16 @@ You must follow this Example format:
         
         message = f"Votes for {nominee_name}: {', '.join(votes)}"
         for p in alive_players:
-            current_prompt = self.ai_agents[p.name][0]["content"]
+            current_prompt = self.ai_agents[p][0]["content"]
             # Append the new critical information to the prompt
             updated_prompt = current_prompt + "\n" + message
             # Update the first message with the new prompt
-            self.ai_agents[p.name][0]["content"] = updated_prompt
-            self.ai_agents[p.name].append({"role": "assistant", "content": message})
+            self.ai_agents[p][0]["content"] = updated_prompt
+            self.ai_agents[p].append({"role": "assistant", "content": message})
         print_system("SYS", message)
         if len(votes) > len(alive_players) / 2:
             message = f"Day {self.night}, {nominee_name} has been executed!"
-            print_system("SYS", message)
+            
             nominee = next(p for p in self.players if p.name == nominee_name)
             if nominee.true_role == "Sailor":
                 message += " But does not die!"
@@ -874,12 +874,12 @@ You must follow this Example format:
                 nominee.alive = False
             print_system("SYS", message)
             for p in alive_players:
-                current_prompt = self.ai_agents[p.name][0]["content"]
+                current_prompt = self.ai_agents[p][0]["content"]
                 # Append the new critical information to the prompt
                 updated_prompt = current_prompt + "\n" + message
                 # Update the first message with the new prompt
-                self.ai_agents[p.name][0]["content"] = updated_prompt
-                self.ai_agents[p.name].append({"role": "assistant", "content": message})
+                self.ai_agents[p][0]["content"] = updated_prompt
+                self.ai_agents[p].append({"role": "assistant", "content": message})
             if nominee.role == "Jester":
                 print_system("SYS", "\nThe Jester has been executed and wins the game!")
                 self.game_over = True
