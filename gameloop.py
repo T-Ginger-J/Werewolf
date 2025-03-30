@@ -65,8 +65,8 @@ class WerewolfGame:
         
         self.playercount = 5  # Default player count
         self.convos = 2
-        self.speed = 2
-        self.mode = 2
+        self.speed = 3
+        self.mode = 1
         
         print_system("none", "You are playing as an AI Agent in a game of Werewolf. colourless text like this will ask you to input")
         print_system("SYS", "This is the colour of system messages. They will alert you when things happen")
@@ -79,7 +79,7 @@ class WerewolfGame:
             self.convos = int(input("Enter the number of coversations on day 1: (1-3)") or self.convos)
             self.mode = int(input("Enter speed: (1 = fast // 2 = full) ") or self.mode)
             if self.mode == 1:
-                self.speed = 0
+                self.speed = 1
             if self.mode > 2:
                 self.speed = 5
             print_system("SYS", "\nDebug Mode: Custom settings applied.\n")
