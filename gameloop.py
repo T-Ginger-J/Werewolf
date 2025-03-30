@@ -63,7 +63,7 @@ class Player:
 class WerewolfGame:
     def __init__(self, debug=False):
         
-        self.playercount = 5  # Default player count
+        self.playercount = 8  # Default player count
         self.convos = 2
         self.speed = 3
         self.mode = 1
@@ -84,7 +84,7 @@ class WerewolfGame:
                 self.speed = 5
             print_system("SYS", "\nDebug Mode: Custom settings applied.\n")
         else:
-            print_system("SYS", f"Default settings")
+            print_system("SYS", f"Default settings: {self.playercount} Players, {self.convos} Conversations, Fast mode enabled")
         
 
         self.players = []
@@ -218,8 +218,8 @@ Answer format: [Exact option from the list]
 
         protected_player = None
         if monk:
-            alive_players = [p.name for p in self.players if p.alive and p != monk]
-            protected_name = self.get_ai_decision(monk, "choose a player to protect", alive_players)
+            target_players = [p.name for p in self.players if p.alive and p != monk]
+            protected_name = self.get_ai_decision(monk, "choose a player to protect", target_players)
             protected_player = next(p for p in self.players if p.name == protected_name)
             current_prompt = self.ai_agents[monk.name][0]["content"]
             string = "night " + str(self.night) + " I protected " + protected_name
@@ -233,8 +233,8 @@ Answer format: [Exact option from the list]
         
         if werewolf:
             
-            alive_players = [p.name for p in self.players if p.alive and p != werewolf]
-            target_name = self.get_ai_decision(werewolf, "choose a player to attack", alive_players)
+            target_players = [p.name for p in self.players if p.alive and p != werewolf]
+            target_name = self.get_ai_decision(werewolf, "choose a player to attack", target_players)
             target = next(p for p in self.players if p.name == target_name) 
     
             if target == protected_player:
@@ -295,8 +295,8 @@ Answer format: [Exact option from the list]
         psycho = next((p for p in self.players if p.role == "Psycho" and p.alive), None)
 
         if psycho:
-            alive_players = [p.name for p in self.players if p.alive and p != psycho]
-            target_name = self.get_ai_decision(psycho, "choose a player to kill", alive_players)
+            target_players = [p.name for p in self.players if p.alive and p != psycho]
+            target_name = self.get_ai_decision(psycho, "choose a player to kill", target_players)
             target = next(p for p in self.players if p.name == target_name)
             current_prompt = self.ai_agents[psycho.name][0]["content"]
             string = "night " + str(self.night) + " I attacked " + target_name
@@ -596,7 +596,7 @@ Keep your conversation brief, 2-3 sentences.
                 for p in convo:
                     self.ai_agents[p.name].append({"role": "assistant" if p == speaker else "user", "content": response})
 
-                time.sleep(self.speed + 2)
+                time.sleep(1)
                     
     def reflection(self):
         print_system("SYS", "\n--- Self Reflection Phase ---")
@@ -643,6 +643,8 @@ Does the information you are giving out make sense given the role descripitions 
         print_system("SYS", "\n--- Discussion Phase ---")
         alive_players = [p for p in self.players if p.alive]
         random.shuffle(alive_players)
+
+        repeats = max(1,repeats-1)
 
         for _ in range(repeats):
             
@@ -737,7 +739,7 @@ You must follow this Example format:
 
                 # Split the input string into a list using the comma as a delimiter
             human.votes = [item.strip() for item in user_input.split(",")]
-            time.sleep(self.speed+3)
+            time.sleep(self.speed)
 
         for thread in threads:
             thread.join()
