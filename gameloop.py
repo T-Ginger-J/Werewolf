@@ -72,8 +72,9 @@ class WerewolfGame:
         print_system("SYS", "This is the colour of system messages. They will alert you when things happen")
         print_system("PRO", "This is the colour of prompts exacrly as the AI sees them. They contain information about choices")
         print_system("AI", "Hello! This is the colour of when AI is speaking to you")
+        self.name = (input ("Enter name: ") or self.name)
         if debug:
-            self.name = (input ("Enter name: ") or self.name)
+            
             self.playercount = int(input("Enter the number of players: (5-10)") or self.playercount)
             self.convos = int(input("Enter the number of coversations on day 1: (1-3)") or self.convos)
             self.mode = int(input("Enter speed: (1 = fast // 2 = full) ") or self.mode)
