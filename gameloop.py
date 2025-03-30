@@ -61,18 +61,18 @@ class Player:
         return f"{self.name} ({'Alive' if self.alive else 'Dead'}) - {self.role}"
 
 class WerewolfGame:
-    def __init__(self, debug=True):
+    def __init__(self, debug=False):
         
         self.playercount = 5  # Default player count
         self.convos = 2
-        self.speed = 1
-        self.mode = 1
-        self.name = "TJ"
+        self.speed = 2
+        self.mode = 2
+        
+        print_system("none", "You are playing as an AI Agent in a game of Werewolf. colourless text like this will ask you to input")
+        print_system("SYS", "This is the colour of system messages. They will alert you when things happen")
+        print_system("PRO", "This is the colour of prompts exacrly as the AI sees them. They contain information about choices")
+        print_system("AI", "Hello! This is the colour of when AI is speaking to you")
         if debug:
-            print_system("none", "You are playing as an AI Agent in a game of Werewolf. colourless text like this will ask you to input")
-            print_system("SYS", "This is the colour of system messages. They will alert you when things happen")
-            print_system("PRO", "This is the colour of prompts exacrly as the AI sees them. They contain information about choices")
-            print_system("AI", "Hello! This is the colour of when AI is speaking to you")
             self.name = (input ("Enter name: ") or self.name)
             self.playercount = int(input("Enter the number of players: (5-10)") or self.playercount)
             self.convos = int(input("Enter the number of coversations on day 1: (1-3)") or self.convos)
