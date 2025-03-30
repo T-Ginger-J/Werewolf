@@ -192,6 +192,8 @@ Be aggressive and suspicious to anyone you think is a Werewolf candidate. Trust 
             # print(f"Error initializing AI for {player.name}: {e}")
 
     def get_ai_decision(self, player, decision_type, options):
+
+        random.shuffle(options)
     
         # Give AI the current circumstances and ask for direction
 
@@ -527,11 +529,13 @@ Keep your conversation brief, 2-3 sentences.
 Do not introduce yourself. Assume they already know your name. DO NOT SAY YOUR NAME.
 Do not assume that you should follow the same format as the message you've seen. 
 Do not comment on emotions. you shouldnt act scared or worried. You should act skeptical and inquisitve.
-Death does not concern you. Dead players are not suspicious.
+Death does not concern you. Dead players are not suspicious or troubling.
 
 Do not comment about a players death unless you know something about them like their role. 
 Your talk should soley revolve around the game you are playing. 
 Do not comment on who died unless you have infromation regarding it. 
+
+There also could be a drunk who thinks they are investigator. Their results are not inconclusive but opposite. Do not say Inconclusive. 
 
 You should be concered if 2 players are claiming the same role. One of them is lying. 
 Therefore do not claim a role that someone else is claiming unless you have reason to believe they are not that role.
@@ -647,16 +651,19 @@ If you learned something last night, you should tell the other players.
 Do not say you don't know something about your role. - Instead say you do not want to reveal that information yet.
 Do not say you know someone is the werewolf unless you have a piece of evidence. - Instead say there are a Werewolf candidate.
 No saying Vague or Inconclusive. You need to be precise.
+Instead of saying you don't know somewhing say you do not want to share your information publicly.
 Do not assume that you should follow the same format as the message you've seen. 
 Do not comment on emotions. you shouldnt act scared or worried. You should act skeptical and inquisitve.
-Death does not concern you and is not suspecious. Do not comment on it unless you have infor regarding it.
+Death does not concern you and is not suspicious or Troubling nor unfortunate. Do not comment on it unless you have infor regarding it.
+A player not speaking is not suspicious, they just havent had a turn to speak yet.
+
 You can relay false information and should do so if you are bluffing about what role you are. You should not do this often. unless you are bluffing a character
 
 Remember there can only be one of each role. You should question anybody claiming the same role as yourself or someone else.
 
 There is a jester and werewolf lying about their role. Avoid executing the jester.
 
-There also could be a drunk who thinks they are investigator. 
+There also could be a drunk who thinks they are investigator. Their results are not inconclusive but opposite. Do not say Inconclusive. 
 
 Suggest a player for execution if you suspect someone. 
 
@@ -763,15 +770,34 @@ You must follow this Example format:
             voter = next(p for p in self.players if p.name == voter_name)
             if nominee_name in voter.votes:
                 votes.append(voter_name)
+
+        message = f"Votes for {nominee_name}: {', '.join(votes)}"
+        for p in alive_players:
+            current_prompt = self.ai_agents[p][0]["content"]
+            # Append the new critical information to the prompt
+            updated_prompt = current_prompt + "\n" + message
+            # Update the first message with the new prompt
+            self.ai_agents[p][0]["content"] = updated_prompt
+            self.ai_agents[p].append({"role": "assistant", "content": message})
         
-        print(f"Votes for {nominee_name}: {', '.join(votes)}")
+        print(message)
         if len(votes) > len(alive_players) / 2:
+            message = f"Day {self.night}, {nominee_name} has been executed!"
             nominee = next(p for p in self.players if p.name == nominee_name)
             print_colored(nominee.color,f"{nominee_name} has been executed!")
             if nominee.true_role == "Sailor":
-                print_colored(nominee.color,"\nBut does not die!")
+                message += " But does not die!"
+                print_colored(nominee.color,"But does not die!")
             else:
                 nominee.alive = False
+            for p in alive_players:
+                current_prompt = self.ai_agents[p][0]["content"]
+                # Append the new critical information to the prompt
+                updated_prompt = current_prompt + "\n" + message
+                # Update the first message with the new prompt
+                self.ai_agents[p][0]["content"] = updated_prompt
+                self.ai_agents[p].append({"role": "assistant", "content": message})
+            
             if nominee.role == "Jester":
                 print_colored(nominee.color,"\nThe Jester has been executed and wins the game!")
                 self.game_over = True
