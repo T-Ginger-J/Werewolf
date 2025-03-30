@@ -177,9 +177,11 @@ Consistency is really important. Try to always stick to one story.
 You are sleuths trying to solve the murders. You should be trying to find out what role everyone is, and kill the ones who are most a threat.
 """
         if player.role == "Werewolf":
-            prompt += "/n " + player.bluff + " is the Werewolf's bluff. It is not in play and is safe to bluff as over the course of the game. Only you know this information so take advantage of it."
+            prompt += """"
+            """ + player.bluff + " is the Werewolf's bluff. It is not in play and is safe to bluff as over the course of the game. Only you know this information so take advantage of it."
         
-        prompt += f"As a {player.role} This is what I need to know: {GUIDE[player.role]}"
+        prompt += """"
+            """ + f"As a {player.role} This is what I need to know: {GUIDE[player.role]}"
 
         if player.AI == False:   # response = ollama.chat(model="mistral", messages=[{"role": "user", "content": prompt}])
             print_system("PRO", prompt)
@@ -190,7 +192,9 @@ You are sleuths trying to solve the murders. You should be trying to find out wh
             # print(f"Error initializing AI for {player.name}: {e}")
 
     def get_ai_decision(self, player, decision_type, options):
-    
+        
+        random.shuffle(options)
+
         # Give AI the current circumstances and ask for direction
 
         prompt = f"""
@@ -497,6 +501,7 @@ Answer format: [Exact option from the list]
                 participant = [p for p in convo]
                 human = any(p.alive and p.AI == False for p in convo)
                 if human:
+                    human = next((p.alive and p.AI == False for p in convo), None)
                     message = f"you are in a private conversation with {', '.join(p.name for p in participant)}. "
                     string = f"""
                     ----------------------------------------------------------------
@@ -510,7 +515,7 @@ Answer format: [Exact option from the list]
 
                     for turn in range(1+len(convo)):    # Each player speaks twice
                         prompt = f"""
-you are {p.name} and you are a {p.role} bluffing as {p.bluff} in a private conversation with {', '.join(o.name for o in participant if o.name != p.name)}
+you are {human.name} and you are a {human.role} bluffing as {human.bluff} in a private conversation with {', '.join(o.name for o in participant if o.name != p.name)}
 anything in your message history with your name is something you have said. Try to be consistent with past claims.
 You do not have to commit to the role you are bluffing as
 Do not say you are the same role as another player unless you are that player or you are the Werewolf
@@ -694,6 +699,7 @@ You can bluff about what role you are. Try to be consistent with your past role 
 You should not bluff unless you have to.
 If you learned something last night, you should tell the other players 
 You can relay false information and should do so if you are bluffing about what role you are. You should not do this often. unless you are bluffing a character
+A character that you have no spoken to has not been silent, they just haven't had a chance to speak yet. 
 
 Remember there can only be one of each role. You should question anybody claiming the same role as yourself or someone else.
 
@@ -791,7 +797,7 @@ You must follow this Example format:
 """
 
         if player.role == "Jester":
-            prompt += ". Remember that you want to get executed."
+            prompt += ". Remember that you want to get executed. You should always be your first vote."
 
         
         choice = self.callAI(messages, prompt)
@@ -848,14 +854,32 @@ You must follow this Example format:
             voter = next(p for p in self.players if p.name == voter_name)
             if nominee_name in voter.votes:
                 votes.append(voter_name)
-        print_system("SYS", f"Votes for {nominee_name}: {', '.join(votes)}")
+        
+        message = f"Votes for {nominee_name}: {', '.join(votes)}"
+        for p in alive_players:
+            current_prompt = self.ai_agents[p.name][0]["content"]
+            # Append the new critical information to the prompt
+            updated_prompt = current_prompt + "\n" + message
+            # Update the first message with the new prompt
+            self.ai_agents[p.name][0]["content"] = updated_prompt
+            self.ai_agents[p.name].append({"role": "assistant", "content": message})
+        print_system("SYS", message)
         if len(votes) > len(alive_players) / 2:
-            print_system("SYS", f"{nominee_name} has been executed!")
+            message = f"Day {self.night}, {nominee_name} has been executed!"
+            print_system("SYS", message)
             nominee = next(p for p in self.players if p.name == nominee_name)
             if nominee.true_role == "Sailor":
-                print_system("SYS", "\nBut does not die!")
+                message += " But does not die!"
             else:
                 nominee.alive = False
+            print_system("SYS", message)
+            for p in alive_players:
+                current_prompt = self.ai_agents[p.name][0]["content"]
+                # Append the new critical information to the prompt
+                updated_prompt = current_prompt + "\n" + message
+                # Update the first message with the new prompt
+                self.ai_agents[p.name][0]["content"] = updated_prompt
+                self.ai_agents[p.name].append({"role": "assistant", "content": message})
             if nominee.role == "Jester":
                 print_system("SYS", "\nThe Jester has been executed and wins the game!")
                 self.game_over = True
@@ -920,7 +944,7 @@ You must follow this Example format:
             print_system("SYS", player.name + " was the " + player.true_role)
 
 if __name__ == "__main__":
-    debug_mode = "debug" not in sys.argv
+    debug_mode = "debug" in sys.argv
     # works with 5 through 10, simply modify playercount
     game = WerewolfGame(debug_mode)
     game.play()
