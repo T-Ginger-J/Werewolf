@@ -12,7 +12,7 @@ genai.configure(api_key="Your Gemini Key")
 GUIDE = {
         "Investigator": "Investigators gain very powerful information, but they have to struggle with the fact that they could be Drunk getting false results. There could be up to one other Investigator so do not be overly concerned if there is one other Seer claim. Just remember one gets true information and the other gets false info. If there are 3 or more Seer claims than there are definitely liars in that group. If you ever get 2 different players are both Werewolf, that means you are Drunk and actually neither is Werewolf. If you ever choose yourself you can know for sure if you are the Drunk or Investigator. A Drunk will see their own name labelled as Werewolf, which coudlnt be true. A Drunk Investigator must reverse all its information. Leraning Werewolf actually means the player is not a werewolf.", 
         "Monk": "Monks protect others from death at night. If there are no deaths at night they might have saved their target. A target that was attacked by the Werewolf is not the Werewolf, and therefore can be trusted. Not all Monks will claim Monk, as they have an important role and want to survive. They might privately ask if players want to be protected.",
-        "Villager": "Villagers Act clueless but logical. Avoid making strong accusations without reason. They might bluff other roles to try and get killed at night. Try not to do more damage than good by spreading false information as you cannot correct it when you are dead. Tell people it is impossible for a Werewolf to claim villager",
+        "Villager": "Villagers Act clueless but logical. Avoid making strong accusations without reason. They might bluff other roles to try and get killed at night. Try not to do more damage than good by spreading false information as you cannot correct it when you are dead.",
         "Saint": "Saints BEG FOR YOUR LIFE! PLEASE DO NOT EXECUTE ME GOOD PEOPLE OF THIS TOWN. Be LOUD. use CAPS LOCK TO INDICATE SHOUTING. At all costs avoid being exected. You want everyone to know you are Saint and that they lose if you are executed. Remind them at every occaison.",
         "Jester": "Get yourself voted. Pretend to be confused or reckless. Push for executions that might seem odd. Make yourself the centre of attention. All the other players will be on the lookout for a Jester so do not be too overt. You can be meta and try and break the rules of the game by claiming to be a different player or spouting nonsense.",
         "Psycho": "Pyschos are forced to kill. If they do not kill their target, they accuse them of being the werewolf. The only players that can survive are Werewolfs, Sailors with immunity and players protected by the Monk. You should be very suspicous of any player that survives your attack. Remember, they are still trying to win with good.",
@@ -25,7 +25,7 @@ GUIDE = {
         "MonkB": "Monk protect others. They cannot choose themselves. If there are no deaths at night they might have saved their target. Subtly defend an innocent player, making it seem like you know more than you do. Not all Monks will claim Monk at first, you can be coy. ",
         "VillagerB": "Villagers Act clueless but logical. Avoid making strong accusations without reason. They might bluff other roles to try and get killed at night so the roles with special abilities do not die",
         "SaintB": "Saints BEG FOR YOUR LIFE! PLEASE DO NOT EXECUTE ME GOOD PEOPLE OF THIS TOWN",
-        "JesterB": "Jesters are on team chaos. Pretend to be confused or reckless. Push for executions that might seem odd. Try not to be too overt to avoid suspicion. Make yourself the centre of attention.",
+        "JesterB": "Jesters will not claim to be Jester. They are on team chaos. Pretend to be confused or reckless. Push for executions that might seem odd. Try not to be too overt to avoid suspicion. Make yourself the centre of attention. Don't publicly claim to be Jester.",
         "PsychoB": "Pyschos are forced to kill. If they do not kill their target, they accuse them of being the werewolf unless they claim to be . Remember, they are still trying to win with good.",
         "WerewolfB": "Werewolf... Don't bluff as werewolf... its even a little extreme for a fool to claim werewolf.",
         "MediumB": "Mediums learn one role per night and that role can no longer be in play since it is dead. They will accuse players claiming to be the roles they know are dead.",
@@ -107,7 +107,7 @@ class WerewolfGame:
         self.players = []
         self.ai_agents = {}
         self.werewolf_role = ["Werewolf"]
-        self.true_roles_pool = ["Investigator", "Monk", "Jester", "Villager", "Fighter", "Drunk", "Medium", "Steward", "Saint", "Sailor"]
+        self.true_roles_pool = ["Investigator", "Monk", "Jester", "Villager", "Villager", "Fighter", "Drunk", "Medium", "Steward", "Saint", "Sailor"]
         self.player_names = ["Ian", "Si Jin", "Jeran", "Malcolm", "Dexter", "Spencer", "Nadia", "John", "Mike", "Anja"] 
         role_expansions = {
             6: lambda: self.true_roles_pool.append("Psycho"),
@@ -166,7 +166,7 @@ Here are all the good roles: they all win by executing the Werewolf
 - The Sailor survives death once. They learn if they were attacked at night.
 - The Saint must avoid being voted out by the town. Werewolf wins if they are.
 - The Psycho kills every night. The werewolf and protected players are immune. 
-- Villager is not the werewolf, probably
+- Villager has no ability. There might be multiple of them
 
 
 Any of the roles besides Werewolf could not be in play. 
@@ -448,7 +448,7 @@ Answer format: [Exact option from the list]
         for p in alive_players:
             prompt = "you are a " + p.role + " bluffing as " + p.bluff + " and you are deciding whether you want to bluff or not. It is best to stick with a role you are already claiming. You should not bluff (pick None) most of the time, but sometimes you might want to bluff to throw off the evil team."
             if p.role == "Werewolf":
-                prompt = "You are the Werewolf, and therefore have to bluff as a role. You can not bluff as Villager and you cannot select None as your bluff" 
+                prompt = "You are the Werewolf, and therefore have to bluff as a role. You cannot select None as your bluff" 
                 if self.night ==1:
                     prompt +=". To help you: the following role is out of play " + p.bluff + ". REMEMBER THIS ROLE. YOU DEFINITELY SHOULD BLUFF AS THIS ROLE AS IT IS THE SAFEST ONE TO DO"
             if p.role == "Veteran" or p.role == "Sailor" or p.role == "Psycho" or p.role == "Villager" or p.role == "Saint" or p.role == "Steward": 
@@ -543,7 +543,7 @@ Keep your conversation brief, 2-3 sentences.
 """
                         speaker = convo[turn % len(convo)]
                         if speaker.role == "Werewolf":
-                            prompt += "You cannot claim to be Villager, you must bluff as another role. Give a convincing impression of that role, giving out false information when you can"
+                            prompt += "You must bluff as another role. Give a convincing impression of that role, giving out false information when you can"
                         player_history = self.ai_agents[speaker.name]
 
                         if speaker.AI:
