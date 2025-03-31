@@ -272,7 +272,7 @@ Answer format: [Exact option from the list]
             else:
                 if target == sailor:
                     if target.AI == False:
-                        print_system("SYS", f"Sailor {sailor.name} becomes mortal")
+                        print_system("SYS", f"Sailor {sailor.name} loses their armour")
                     elif werewolf.AI == False:
                         print_system("SYS", f"Werewolf {werewolf.name} attacks {target.name}, but they survived!")
                     current_prompt = self.ai_agents[sailor.name][0]["content"]
@@ -282,7 +282,7 @@ Answer format: [Exact option from the list]
                     # Update the first message with the new prompt
                     self.ai_agents[sailor.name][0]["content"] = updated_prompt
                     self.ai_agents[sailor.name].append({"role": "assistant", "content": string})
-                    sailor.true_role = "Mortal"
+                    sailor.true_role = "Sailand"
                     sailor = None
                 else:
                     dead.append(target.name)
@@ -300,7 +300,7 @@ Answer format: [Exact option from the list]
                         else:
                             if target == sailor:
                                 if target.AI == False:
-                                    print_system("SYS", f"Sailor {sailor.name} becomes mortal")
+                                    print_system("SYS", f"Sailor {sailor.name} loses their armour")
                                 current_prompt = self.ai_agents[sailor.name][0]["content"]
                                 string = "night " + str(self.night) + " I was attacked and lost my protection"
                                 # Append the new critical information to the prompt
@@ -308,7 +308,7 @@ Answer format: [Exact option from the list]
                                 # Update the first message with the new prompt
                                 self.ai_agents[sailor.name][0]["content"] = updated_prompt
                                 self.ai_agents[sailor.name].append({"role": "assistant", "content": string})
-                                sailor.true_role = "Mortal"
+                                sailor.true_role = "Sailand"
                                 sailor = None
                             else:
                                 if fighter.AI == False:
@@ -340,7 +340,7 @@ Answer format: [Exact option from the list]
             else:
                 if target == sailor:
                     if target.AI == False:
-                        print_system("SYS", f"Sailor {sailor.name} becomes mortal")
+                        print_system("SYS", f"Sailor {sailor.name} loses their armour")
                     if psycho.AI == False:
                         print_system("SYS", f"Psycho {psycho.name} attacks {target.name}, but they are protected!")
                     current_prompt = self.ai_agents[sailor.name][0]["content"]
@@ -350,7 +350,7 @@ Answer format: [Exact option from the list]
                         # Update the first message with the new prompt
                     self.ai_agents[sailor.name][0]["content"] = updated_prompt
                     self.ai_agents[sailor.name].append({"role": "assistant", "content": string})
-                    sailor.true_role = "Mortal"
+                    sailor.true_role = "Sailand"
                     sailor = None
                 else:
                     dead.append(target.name)
