@@ -24,7 +24,7 @@ GUIDE = {
         "InvestigatorB": "Investigators will claim to have investigated a player and will get either Werewolf or not a Werewolf. Remember that you could be drunk, which means there can be up to 2 good people that think they are investigator.",
         "MonkB": "Monk protect others. They cannot choose themselves. If there are no deaths at night they might have saved their target. Subtly defend an innocent player, making it seem like you know more than you do. Not all Monks will claim Monk at first, you can be coy. ",
         "VillagerB": "Villagers Act clueless but logical. Avoid making strong accusations without reason. They might bluff other roles to try and get killed at night so the roles with special abilities do not die",
-        "SaintB": "Saints BEG FOR YOUR LIFE! PLEASE DO NOT EXECUTE ME GOOD PEOPLE OF THIS TOWN",
+        "SaintB": "Saints BEG FOR YOUR LIFE! PLEASE DO NOT EXECUTE ME GOOD PEOPLE OF THIS TOWN. USE CAPS TO LOUDLY DECLARE YOURSELF THE SAINT.",
         "JesterB": "Jesters will not claim to be Jester. They are on team chaos. Pretend to be confused or reckless. Push for executions that might seem odd. Try not to be too overt to avoid suspicion. Make yourself the centre of attention. Don't publicly claim to be Jester.",
         "PsychoB": "Pyschos are forced to kill. If they do not kill their target, they accuse them of being the werewolf unless they claim to be . Remember, they are still trying to win with good.",
         "WerewolfB": "Werewolf... Don't bluff as werewolf... its even a little extreme for a fool to claim werewolf.",
@@ -598,7 +598,7 @@ Make sure you respond to the messages already in this conversation. DO NOT REPEA
 You should claim to be a role (Villager, Investigator, Monk, Fighter, Steward, Medium, Saint, Sailor, Psycho, Jester)
 Some roles might want to lie about what role they are, like Werewolf. 
 You can relay false information if you think it will help.
-No ability will ever fail, 
+No ability will ever fail, do not say your ability was inconclusive. Instead say you don't want to share your info.
 
 Do not introduce yourself. Assume they already know your name. DO NOT SAY YOUR NAME.
 Do not assume that you should follow the same format as the message you've seen. 
@@ -643,6 +643,7 @@ Every player has a unique role. Have you learned what roles players are claiming
 What role have you been claiming? If this isn't your real role what information have you been giving out?
 What is your route to victory? Who do you need to execute to get there?  
 Who do you think should not be executed? is it because they are good? or Because you suspect them of being a Jester?
+Who do you trust that you think should not be executed. 
 Do you think there is a drunk in play?
 
 Keep your responses brief, summarize the most important points that you want to remember. Maxium number of sentences is {self.convos + 3}
@@ -697,6 +698,7 @@ What would you like to tell the other players?
 You should claim to be a role (Villager, Investigator, Monk, Fighter, Steward, Medium, Saint, Sailor, Pyscho, Jester)
 You can bluff about what role you are. Try to be consistent with your past role claims, or give justification for why you are chainging your claim. 
 You should not bluff unless you have to.
+Do not say inconclusive. All abilities will always function as intended. You will never get inconclusive or vague results.
 If you learned something last night, you should tell the other players 
 You can relay false information and should do so if you are bluffing about what role you are. You should not do this often. unless you are bluffing a character
 A character that you have no spoken to has not been silent, they just haven't had a chance to speak yet. 
@@ -705,9 +707,10 @@ Remember there can only be one of each role. You should question anybody claimin
 
 There is a jester and werewolf lying about their role. Avoid executing the jester.
 
-There also could be a drunk who thinks they are investigator. 
+There also could be a drunk who thinks they are investigator but gets opposite results. If someone is getting weird results you can flip it to get the truth. 
 
 Suggest a player for execution if you suspect someone. 
+Tell people if you trust someone not to be Werewolf.
 
 Please keep your responses to 1-2 short sentences.  
 """
