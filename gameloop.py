@@ -27,7 +27,7 @@ GUIDE = {
         "InvestigatorB": "Investigators will claim to have investigated a player and will get either Werewolf or not a Werewolf. Remember that you could be drunk, which means there can be up to 2 good people that think they are investigator.",
         "MonkB": "Monk protect others. They cannot choose themselves. If there are no deaths at night they might have saved their target. Subtly defend an innocent player, making it seem like you know more than you do. Not all Monks will claim Monk at first, you can be coy. ",
         "VillagerB": "Villagers Act clueless but logical. Avoid making strong accusations without reason. They might bluff other roles to try and get killed at night so the roles with special abilities do not die",
-        "SaintB": "Saints BEG FOR YOUR LIFE! PLEASE DO NOT EXECUTE ME GOOD PEOPLE OF THIS TOWN",
+        "SaintB": "Saints BEG FOR YOUR LIFE! PLEASE DO NOT EXECUTE ME GOOD PEOPLE OF THIS TOWN, use CAPS to EMPHASISE how BADLY YOU DONT WANT TO BE VOTED OUT",
         "JesterB": "Jesters are on team chaos. Pretend to be confused or reckless. Push for executions that might seem odd. Try not to be too overt to avoid suspicion. Make yourself the centre of attention.",
         "PsychoB": "Pyschos are forced to kill. If they do not kill their target, they accuse them of being the werewolf unless they claim to be . Remember, they are still trying to win with good.",
         "WerewolfB": "Werewolf... Don't bluff as werewolf... its even a little extreme for a fool to claim werewolf.",
@@ -262,7 +262,7 @@ Answer format: [Exact option from the list]
             else:
                 if target == sailor:
                     print_colored(werewolf.color,f"Werewolf {werewolf.name} attacks {target.name}, but they are protected!")
-                    print_colored(sailor.color,f"Sailor {sailor.name} becomes mortal")
+                    print_colored(sailor.color,f"Sailor {sailor.name} loses their armour")
                     
                     current_prompt = self.ai_agents[sailor.name][0]["content"]
                     string = "night " + str(self.night) + " I was attacked and lost my protection"
@@ -271,7 +271,7 @@ Answer format: [Exact option from the list]
                     # Update the first message with the new prompt
                     self.ai_agents[sailor.name][0]["content"] = updated_prompt
                     self.ai_agents[sailor.name].append({"role": "assistant", "content": string})
-                    sailor.true_role = "Mortal"
+                    sailor.true_role = "Sailand"
                     sailor = None
                 else:
                     dead.append(target.name)
@@ -286,7 +286,7 @@ Answer format: [Exact option from the list]
                         else:
                             if target == sailor:
                                 print_colored(fighter.color,f"Fighter {fighter.name} attacks {target.name}, but they are protected!")
-                                print_colored(sailor.color,f"Sailor {sailor.name} becomes mortal")
+                                print_colored(sailor.color,f"Sailor {sailor.name} loses their armour")
                                 current_prompt = self.ai_agents[sailor.name][0]["content"]
                                 string = "night " + str(self.night) + " I was attacked and lost my protection"
                                 # Append the new critical information to the prompt
@@ -294,7 +294,7 @@ Answer format: [Exact option from the list]
                                 # Update the first message with the new prompt
                                 self.ai_agents[sailor.name][0]["content"] = updated_prompt
                                 self.ai_agents[sailor.name].append({"role": "assistant", "content": string})
-                                sailor.true_role = "Mortal"
+                                sailor.true_role = "Sailand"
                                 sailor = None
                             else:
                                 print_colored(fighter.color,f"Fighter {fighter.name} attacks {target.name}.")
@@ -325,7 +325,7 @@ Answer format: [Exact option from the list]
             else:
                 if target == sailor:
                     print_colored(psycho.color,f"Psycho {psycho.name} attacks {target.name}, but they are protected!")
-                    print_colored(sailor.color,f"Sailor {sailor.name} becomes mortal")
+                    print_colored(sailor.color,f"Sailor {sailor.name} loses their armour")
                     current_prompt = self.ai_agents[sailor.name][0]["content"]
                     string = "night " + str(self.night) + " I was attacked and lost my protection"
                         # Append the new critical information to the prompt
@@ -333,7 +333,7 @@ Answer format: [Exact option from the list]
                         # Update the first message with the new prompt
                     self.ai_agents[sailor.name][0]["content"] = updated_prompt
                     self.ai_agents[sailor.name].append({"role": "assistant", "content": string})
-                    sailor.true_role = "Mortal"
+                    sailor.true_role = "Sailand"
                     sailor = None
                 else:
                     dead.append(target.name)
@@ -583,6 +583,7 @@ Every player has a unique role. Have you learned what roles players are claiming
 What role have you been claiming? If this isn't your real role what information have you been giving out?
 What is your route to victory? Who do you need to execute to get there?  
 Who do you think should not be executed? is it because they are good? or Because you suspect them of being a Jester?
+Who do you trust that should not be executed?
 Do you think there is a drunk in play?
 How do you explain the number of deaths last night? No deaths could be caused by an alive Monk or Sailor. 2 Deaths could be caused by Pyscho or Fighter.
 If only one player died then that is not worth commenting on.
@@ -663,9 +664,10 @@ Remember there can only be one of each role. You should question anybody claimin
 
 There is a jester and werewolf lying about their role. Avoid executing the jester.
 
-There also could be a drunk who thinks they are investigator. Their results are not inconclusive but opposite. Do not say Inconclusive. 
+There also could be a drunk who thinks they are investigator. Their results are not inconclusive but opposite. Do not say Inconclusive. A Drunk gets "Werewolf" on good players and "Not Werewolf" on the Werewolf.
 
 Suggest a player for execution if you suspect someone. 
+Tell people if you trust that someone isnt the Werewolf. 
 
 Please keep your responses to 1-2 short sentences.  You can also choose not to share any of these details. You can publicly withold a role claim, suspicions or just not say anything if you ahve nothing to add. 
                 """
