@@ -1,5 +1,7 @@
 import random
 import time
+import datetime
+import os
 import json
 import sys
 import threading
@@ -132,7 +134,6 @@ class WerewolfGame:
         random.shuffle(all_roles)
         random.shuffle(self.player_names)
         self.player_names[0] = self.name
-        AIs = True
 
         for i, role in enumerate(all_roles):
             self.players.append(Player(self.player_names[i], role))
@@ -517,8 +518,10 @@ Answer format: [Exact option from the list]
                         self.ai_agents[p.name].append({"role": "user", "content": message})
 
                     for turn in range(1+len(convo)):    # Each player speaks twice
+
+                        speaker = convo[turn % len(convo)]
                         prompt = f"""
-you are {human.name} and you are a {human.role} bluffing as {human.bluff} in a private conversation with {', '.join(o.name for o in participant if o.name != p.name)}
+you are {speaker.name} and you are a {speaker.role} bluffing as {speaker.bluff} in a private conversation with {', '.join(o.name for o in participant if o.name != p.name)}
 anything in your message history with your name is something you have said. Try to be consistent with past claims.
 You do not have to commit to the role you are bluffing as
 Do not say you are the same role as another player unless you are that player or you are the Werewolf
@@ -544,7 +547,7 @@ Stick to one bluff at a time. Do not say you are a role that you are not and are
 
 Keep your conversation brief, 2-3 sentences.
 """
-                        speaker = convo[turn % len(convo)]
+                        
                         if speaker.role == "Werewolf":
                             prompt += "You must bluff as another role. Give a convincing impression of that role, giving out false information when you can"
                         player_history = self.ai_agents[speaker.name]
@@ -592,7 +595,7 @@ Keep your conversation brief, 2-3 sentences.
             speaker = convo[turn % len(convo)]
             if speaker.isAI:  # AI only
                 prompt = f"""
-you are {p.name} and you are a {p.role} bluffing as {p.bluff} in a private conversation with {', '.join(o.name for o in participant if o.name != p.name)}
+you are {speaker.name} and you are a {speaker.role} bluffing as {speaker.bluff} in a private conversation with {', '.join(o.name for o in participant if o.name != p.name)}
 anything in your message history with your name is something you have said. Try to be consistent with past claims.
 You do not have to commit to the role you are bluffing as
 Do not say you are the same role as another player unless you are that player or you are the Werewolf
@@ -952,6 +955,26 @@ You must follow this Example format:
         print_system("SYS", "\n--- Players and Roles ---")
         for player in self.players:
             print_system("SYS", player.name + " was the " + player.true_role)
+
+        dump = input("Do you want to save this game?")
+        if dump.upper() == "YES" or dump.upper() == "Y":
+            log_dir = "logs"
+            os.makedirs(log_dir, exist_ok=True)
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            filename = os.path.join(log_dir, f"game_log_{timestamp}.txt")
+
+            with open(filename, "w", encoding="utf-8") as f:
+                # Write AI conversation history
+                f.write("\n=== AI Conversation History ===\n")
+                for player in self.players:
+                    messages = self.ai_agents.get(player.name, [])
+                    f.write(f"\n{player}'s AI History:\n")
+                    for msg in messages:
+                        role = msg["role"].capitalize()  # "user" or "assistant"
+                        content = msg["content"]
+                        f.write(f"{role}: {content}\n")
+
+        print(f"Game log saved as {filename}")
 
 if __name__ == "__main__":
     debug_mode = "debug" in sys.argv
